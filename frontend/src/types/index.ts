@@ -1,6 +1,6 @@
 // /frontend/src/types/index.ts
 
-export type Rol = 'MAESTRO' | 'CONTROL_ESCOLAR';
+export type Rol = 'MAESTRO' | 'CONTROL_ESCOLAR' | 'ALUMNO';
 
 export interface User {
     id: number;
@@ -20,6 +20,7 @@ export interface Alumno {
     nombre: string;
     matricula: string;
     grupo: string;
+    semestre?: number;
     fecha_nacimiento?: string;
 }
 

@@ -1,4 +1,4 @@
-const { Materia, Usuario } = require('../models');
+const { Materia, Usuario, Alumno } = require('../models');
 const { Op } = require('sequelize'); // Útil si queremos filtrar por rol en el futuro
 
 const GeneralController = {
@@ -41,6 +41,27 @@ const GeneralController = {
             });
         } catch (error) {
             console.error('Error al obtener lista de usuarios:', error);
+            res.status(500).json({ message: 'Error interno del servidor.' });
+        }
+    },
+
+    /**
+     * 3. Obtiene la lista completa de Alumnos para selectores.
+     * GET /api/alumnos/list
+     */
+    async getAlumnosList(req, res) {
+        try {
+            const alumnos = await Alumno.findAll({ 
+                attributes: ['id', 'nombre', 'matricula', 'grupo', 'semestre'],
+                order: [['nombre', 'ASC']]
+            });
+            
+            res.json({
+                message: 'Lista de alumnos obtenida con éxito.',
+                data: alumnos
+            });
+        } catch (error) {
+            console.error('Error al obtener lista de alumnos:', error);
             res.status(500).json({ message: 'Error interno del servidor.' });
         }
     },

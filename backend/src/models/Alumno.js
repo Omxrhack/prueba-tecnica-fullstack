@@ -21,6 +21,19 @@ const Alumno = sequelize.define('Alumno', {
   },
   grupo: {
     type: DataTypes.STRING(50)
+  },
+  semestre: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  usuario_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    unique: true,
+    references: {
+      model: 'usuarios',
+      key: 'id'
+    }
   }
 }, {
   tableName: 'alumnos',

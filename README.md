@@ -1,184 +1,664 @@
-# Sistema de Gestión de Calificaciones Escolares
+# 🎓 Sistema de Control Escolar
 
-## Instrucción Principañ
-
----
-
-## 1. Arquitectura y Tecnología
-
-**Arquitectura:** Monorepo con Back-end y Front-end separados.
-
-**Back-end:** Node.js (Express), PostgreSQL (DB), Sequelize (ORM), arquitectura **MVC**.
-
-**Front-end:** React con TypeScript (`.tsx`), Vite, Axios con interceptores JWT.
-
-**DevOps:** Docker Compose para levantar DB, API y Cliente con un solo comando.
-
-**Seguridad:** Todas las rutas excepto `/login` protegidas con **JWT**.
+Sistema web full-stack profesional para la gestión integral de calificaciones escolares, diseñado con una arquitectura moderna, interfaz intuitiva y animaciones fluidas.
 
 ---
 
-## 2. Roles y Escala de Calificaciones
+## 📋 Tabla de Contenidos
 
-**Roles:** `MAESTRO` y `CONTROL_ESCOLAR`.
-
-**Escala de Notas:** 0.00 a 10.00, validada estrictamente en la API.
-
----
-
-## 3. Modelo de Datos (Sequelize)
-
-| Entidad | Campos Clave | Relaciones | Notas Especiales |
-| :--- | :--- | :--- | :--- |
-| **Usuarios** | `id`, `email`, `password_hash`, `rol` | Calificaciones y Asignaciones (`maestro_id`) | Seeders con 1 Admin y 2 Maestros |
-| **Alumnos** | `id`, `nombre`, `matricula` | Calificaciones | |
-| **Materias** | `id`, `nombre`, `codigo` | Calificaciones y Asignaciones | |
-| **Asignaciones** | `id`, `maestro_id`, `materia_id`, `cupo_maximo` | FK a Usuarios y Materias | Define qué maestro imparte qué materia |
-| **Calificaciones** | `id`, `alumno_id`, `materia_id`, `maestro_id`, `nota` | FK a Alumnos, Materias y Usuarios | Implementa **Soft Delete** (`deleted_at`) |
+- [Descripción General](#-descripción-general)
+- [Características Principales](#-características-principales)
+- [Arquitectura del Sistema](#-arquitectura-del-sistema)
+- [Tecnologías Utilizadas](#-tecnologías-utilizadas)
+- [Estructura del Proyecto](#-estructura-del-proyecto)
+- [Instalación y Configuración](#-instalación-y-configuración)
+- [Uso del Sistema](#-uso-del-sistema)
+- [API Endpoints](#-api-endpoints)
+- [Modelo de Datos](#-modelo-de-datos)
+- [Credenciales de Prueba](#-credenciales-de-prueba)
+- [Docker](#-docker)
+- [Desarrollo](#-desarrollo)
 
 ---
 
-## 4. Definición de Endpoints (API REST)
+## 🎯 Descripción General
 
-| Método | Endpoint | Rol | Función |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/auth/login` | Público | Autenticación de credenciales |
-| `GET` | `/maestro/alumnos` | `MAESTRO` | Lista alumnos asignados con calificaciones |
-| `POST` | `/maestro/calificaciones/{materiaID}/{alumnoID}` | `MAESTRO` | Registra o actualiza calificación |
-| `POST` | `/controlescolar/asignacion` | `CONTROL_ESCOLAR` | Asigna materia a maestro |
-| `GET` | `/controlescolar/reporte` | `CONTROL_ESCOLAR` | Reporte global de promedios por alumno |
-| `PATCH`| `/controlescolar/calificaciones/{materiaID}/{alumnoID}` | `CONTROL_ESCOLAR` | Actualiza nota u observaciones |
-| `DELETE`| `/controlescolar/calificaciones/{materiaID}/{alumnoID}` | `CONTROL_ESCOLAR` | Soft Delete de calificación |
+Sistema completo de gestión escolar que permite a diferentes roles (Administradores, Maestros y Alumnos) gestionar y consultar calificaciones de manera eficiente. El sistema incluye funcionalidades avanzadas como asignación de materias, gestión de calificaciones, reportes estadísticos y una interfaz moderna con animaciones fluidas.
 
 ---
 
-## 5. Estrategia de Inicialización de la DB
+## ✨ Características Principales
 
-```javascript
-import express from 'express';
-import { sequelize } from './models';
-import seeders from './seeders';
+### 👨‍💼 Panel de Administrador (Control Escolar)
+- ✅ Gestión completa de materias, maestros y alumnos
+- ✅ Asignación de maestros a materias
+- ✅ Asignación masiva de alumnos por grupo o semestre
+- ✅ Creación de usuarios (Maestro, Alumno, Admin)
+- ✅ Edición y eliminación de calificaciones
+- ✅ Reportes globales de promedios por alumno
+- ✅ Reportes detallados por materia
+- ✅ Búsqueda y filtrado avanzado
 
-const app = express();
-app.use(express.json());
+### 👨‍🏫 Panel de Maestro
+- ✅ Visualización de materias asignadas
+- ✅ Gestión de calificaciones de alumnos
+- ✅ Búsqueda y filtrado de alumnos
+- ✅ Registro de observaciones por calificación
+- ✅ Vista de cupo disponible por materia
 
-(async () => {
-  try {
-    await sequelize.authenticate();
-    await sequelize.sync({ alter: true });
-    await seeders();
-    app.listen(3000, () => console.log('Servidor corriendo en puerto 3000'));
-  } catch (error) {
-    console.error('Error al iniciar la DB:', error);
+### 👨‍🎓 Panel de Alumno
+- ✅ Consulta de calificaciones propias
+- ✅ Visualización de promedio general
+- ✅ Detalle por materia con información del maestro
+- ✅ Historial completo de calificaciones
+
+### 🎨 Diseño y UX
+- ✅ Interfaz moderna con gradientes profesionales
+- ✅ Animaciones fluidas y transiciones suaves
+- ✅ Diseño responsive (móvil, tablet, desktop)
+- ✅ Colores profesionales (Primary, Secondary, Accent)
+- ✅ Componentes reutilizables y estilizados
+- ✅ Feedback visual en todas las acciones
+
+---
+
+## 🏗️ Arquitectura del Sistema
+
+El proyecto sigue una arquitectura **monorepo** con separación clara entre backend y frontend:
+
+```
+prueba-tecnica-fullstack/
+├── backend/          # API REST (Node.js + Express)
+├── frontend/         # Aplicación Web (React + TypeScript)
+└── docker-compose.yml # Orquestación de servicios
+```
+
+### Backend (MVC)
+- **Models**: Definición de entidades con Sequelize ORM
+- **Controllers**: Lógica de negocio
+- **Routes**: Definición de endpoints API
+- **Middlewares**: Autenticación, validación, manejo de errores
+- **Seeders**: Datos de prueba iniciales
+
+### Frontend (Component-Based)
+- **Pages**: Vistas principales (Login, Dashboard)
+- **Components**: Componentes reutilizables por rol
+- **Services**: Lógica de comunicación con API
+- **Types**: Definiciones TypeScript
+- **Styles**: Configuración Tailwind CSS con temas personalizados
+
+---
+
+## 🛠️ Tecnologías Utilizadas
+
+### Backend
+- **Node.js** (v22+) - Runtime JavaScript
+- **Express.js** (v5.2) - Framework web
+- **PostgreSQL** (v15) - Base de datos relacional
+- **Sequelize** (v6.37) - ORM para Node.js
+- **JWT** (jsonwebtoken) - Autenticación
+- **bcryptjs** - Hash de contraseñas
+- **express-validator** - Validación de datos
+- **helmet** - Seguridad HTTP
+- **morgan** - Logging de requests
+- **dotenv** - Gestión de variables de entorno
+
+### Frontend
+- **React** (v19.2) - Biblioteca UI
+- **TypeScript** (v5.9) - Tipado estático
+- **Vite** (v7.2) - Build tool y dev server
+- **Tailwind CSS** (v3.4) - Framework CSS utility-first
+- **Axios** (v1.13) - Cliente HTTP
+- **React Router DOM** (v7.10) - Enrutamiento
+
+### DevOps
+- **Docker** - Containerización
+- **Docker Compose** - Orquestación de servicios
+
+---
+
+## 📁 Estructura del Proyecto
+
+```
+prueba-tecnica-fullstack/
+│
+├── backend/
+│   ├── src/
+│   │   ├── config/
+│   │   │   └── database.js              # Configuración Sequelize
+│   │   ├── controllers/
+│   │   │   ├── admin.controller.js      # Lógica Admin
+│   │   │   ├── alumno.controller.js     # Lógica Alumno
+│   │   │   ├── auth.controller.js       # Autenticación
+│   │   │   ├── general.controller.js    # Endpoints generales
+│   │   │   └── maestro.controller.js    # Lógica Maestro
+│   │   ├── middlewares/
+│   │   │   ├── auth.middleware.js       # Verificación JWT
+│   │   │   ├── errorHandler.middleware.js # Manejo de errores
+│   │   │   └── validate.middleware.js   # Validación requests
+│   │   ├── models/
+│   │   │   ├── Alumno.js                # Modelo Alumno
+│   │   │   ├── Asignacion.js            # Modelo Asignación
+│   │   │   ├── Calificacion.js          # Modelo Calificación
+│   │   │   ├── Materia.js               # Modelo Materia
+│   │   │   ├── Usuario.js               # Modelo Usuario
+│   │   │   └── index.js                 # Asociaciones Sequelize
+│   │   ├── routes/
+│   │   │   ├── admin.routes.js          # Rutas Admin
+│   │   │   ├── alumno.routes.js         # Rutas Alumno
+│   │   │   ├── auth.routes.js           # Rutas Auth
+│   │   │   ├── general.routes.js        # Rutas Generales
+│   │   │   └── maestro.routes.js        # Rutas Maestro
+│   │   └── seeders/
+│   │       └── runSeeds.js              # Datos iniciales
+│   ├── index.js                         # Punto de entrada
+│   ├── package.json
+│   └── Dockerfile
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── AdminDashboard.tsx       # Panel Admin
+│   │   │   ├── AlumnoDashboard.tsx      # Panel Alumno
+│   │   │   └── MaestroDashboard.tsx     # Panel Maestro
+│   │   ├── pages/
+│   │   │   ├── Dashboard.tsx            # Layout principal
+│   │   │   └── Login.tsx                # Página de login
+│   │   ├── services/
+│   │   │   ├── admin.service.ts         # Servicios Admin
+│   │   │   ├── alumno.service.ts        # Servicios Alumno
+│   │   │   ├── api.ts                   # Configuración Axios
+│   │   │   ├── general.service.ts       # Servicios generales
+│   │   │   └── maestro.service.ts       # Servicios Maestro
+│   │   ├── types/
+│   │   │   └── index.ts                 # Tipos TypeScript
+│   │   ├── App.tsx                      # Componente raíz
+│   │   ├── index.css                    # Estilos globales
+│   │   └── main.tsx                     # Punto de entrada
+│   ├── tailwind.config.cjs              # Config Tailwind
+│   ├── package.json
+│   └── Dockerfile
+│
+├── docker-compose.yml                   # Orquestación Docker
+├── .env.example                         # Variables de entorno ejemplo
+└── README.md                            # Este archivo
+```
+
+---
+
+## 🚀 Instalación y Configuración
+
+### Prerrequisitos
+
+- **Node.js** >= 18.0.0
+- **Docker** y **Docker Compose** (recomendado)
+- **PostgreSQL** >= 13 (si no usas Docker)
+- **npm** o **yarn**
+
+### Opción 1: Docker (Recomendado)
+
+1. **Clonar el repositorio**
+   ```bash
+   git clone <repository-url>
+   cd prueba-tecnica-fullstack
+   ```
+
+2. **Configurar variables de entorno**
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Editar `.env` con tus valores:
+   ```env
+   # Base de Datos
+   DB_HOST=db
+   DB_USER=postgres
+   DB_PASSWORD=tu_password_seguro
+   DB_NAME=sistema_escolar
+   
+   # Backend
+   PORT=3000
+   JWT_SECRET=tu_jwt_secret_super_seguro
+   NODE_ENV=development
+   
+   # Frontend
+   VITE_API_URL=http://localhost:3000/api
+   ```
+
+3. **Levantar servicios con Docker Compose**
+   ```bash
+   docker-compose up -d
+   ```
+
+   Esto levantará:
+   - PostgreSQL en el puerto 5432
+   - Backend API en el puerto 3000
+   - Frontend en el puerto 5173
+
+4. **Acceder a la aplicación**
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:3000/api
+   - Health Check: http://localhost:3000/api/health
+
+### Opción 2: Instalación Manual
+
+#### Backend
+
+1. **Navegar al directorio backend**
+   ```bash
+   cd backend
+   ```
+
+2. **Instalar dependencias**
+   ```bash
+   npm install
+   ```
+
+3. **Configurar base de datos**
+   - Crear base de datos PostgreSQL
+   - Configurar variables de entorno en `.env`
+
+4. **Iniciar servidor**
+   ```bash
+   npm run dev  # Modo desarrollo con nodemon
+   # o
+   npm start    # Modo producción
+   ```
+
+#### Frontend
+
+1. **Navegar al directorio frontend**
+   ```bash
+   cd frontend
+   ```
+
+2. **Instalar dependencias**
+   ```bash
+   npm install
+   ```
+
+3. **Configurar API URL**
+   - Editar `.env` con `VITE_API_URL=http://localhost:3000/api`
+
+4. **Iniciar servidor de desarrollo**
+   ```bash
+   npm run dev
+   ```
+
+5. **Abrir en el navegador**
+   - http://localhost:5173
+
+---
+
+## 📖 Uso del Sistema
+
+### Inicio de Sesión
+
+1. Accede a http://localhost:5173
+2. Ingresa las credenciales (ver sección de credenciales de prueba)
+3. Serás redirigido al dashboard correspondiente a tu rol
+
+### Flujo de Trabajo
+
+#### Para Administradores:
+1. Crear materias, maestros y alumnos
+2. Asignar maestros a materias
+3. Asignar alumnos a materias (individual o por grupo/semestre)
+4. Gestionar calificaciones (editar/eliminar)
+5. Consultar reportes globales y por materia
+
+#### Para Maestros:
+1. Seleccionar una materia asignada
+2. Ver lista de alumnos inscritos
+3. Registrar o editar calificaciones
+4. Agregar observaciones
+
+#### Para Alumnos:
+1. Visualizar todas tus calificaciones
+2. Ver promedio general
+3. Consultar detalle por materia
+
+---
+
+## 🔌 API Endpoints
+
+### Autenticación
+
+| Método | Endpoint | Descripción | Autenticación |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/auth/login` | Iniciar sesión | ❌ Público |
+
+**Request Body:**
+```json
+{
+  "email": "admin@escuela.com",
+  "password": "password123"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Login exitoso",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": 1,
+    "nombre": "Admin Control Escolar",
+    "email": "admin@escuela.com",
+    "rol": "CONTROL_ESCOLAR"
   }
-})();
+}
 ```
 
-> Garantiza que la API solo reciba peticiones cuando la DB esté lista.
+### Control Escolar (Admin)
 
----
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/api/controlescolar/reporte` | Reporte global de promedios |
+| `GET` | `/api/controlescolar/reporte/:materiaID` | Detalle de calificaciones por materia |
+| `POST` | `/api/controlescolar/materias` | Crear materia (con asignación opcional) |
+| `POST` | `/api/controlescolar/materias/:materiaID/alumnos` | Asignar alumnos a materia |
+| `POST` | `/api/controlescolar/asignacion` | Asignar maestro a materia |
+| `POST` | `/api/controlescolar/usuarios` | Crear usuario (Maestro/Alumno/Admin) |
+| `PATCH` | `/api/controlescolar/calificaciones/:materiaID/:alumnoID` | Actualizar calificación |
+| `DELETE` | `/api/controlescolar/calificaciones/:materiaID/:alumnoID` | Eliminar calificación (soft delete) |
 
-## 6. Lógica del Reporte Global (SQL/Sequelize)
+### Maestro
 
-```javascript
-const report = await Calificacion.findAll({
-  attributes: [
-    'alumno_id',
-    [sequelize.fn('AVG', sequelize.col('nota')), 'promedio']
-  ],
-  where: { deleted_at: null },
-  group: ['alumno_id'],
-  include: [{ model: Alumno, attributes: ['nombre', 'matricula'] }]
-});
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/api/maestro/materias` | Lista de materias asignadas |
+| `GET` | `/api/maestro/alumnos` | Lista de alumnos por materia |
+| `POST` | `/api/maestro/calificaciones` | Registrar calificación |
+
+### Alumno
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/api/alumno/calificaciones` | Mis calificaciones |
+| `GET` | `/api/alumno/calificaciones/:materiaID` | Calificación por materia |
+| `GET` | `/api/alumno/promedio` | Mi promedio general |
+
+### Rutas Generales (Autenticadas)
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/api/materias` | Lista de todas las materias |
+| `GET` | `/api/usuarios/list` | Lista de usuarios |
+| `GET` | `/api/alumnos/list` | Lista de alumnos |
+
+**Nota:** Todas las rutas (excepto `/api/auth/login`) requieren token JWT en el header:
 ```
-
-> Calcula promedio de todos los alumnos ignorando registros eliminados.
-
----
-
-## 7. Implementación del Soft Delete
-
-```javascript
-const Calificacion = sequelize.define('Calificacion', {
-  nota: { type: DataTypes.FLOAT, allowNull: false, validate: { min: 0, max: 10 } },
-  deleted_at: { type: DataTypes.DATE, allowNull: true }
-}, { paranoid: true });
-
-// DELETE endpoint
-app.delete('/api/controlescolar/calificaciones/:materiaID/:alumnoID', async (req, res) => {
-  await Calificacion.destroy({ where: { materia_id: req.params.materiaID, alumno_id: req.params.alumnoID } });
-  res.json({ message: 'Calificación eliminada (Soft Delete)' });
-});
-```
-
-> `paranoid: true` asegura que `.destroy()` solo marque `deleted_at`.
-
----
-
-## 8. Flujo de la Interfaz del Admin (Front-end)
-
-1. **Selector de Materia**: Muestra todas las materias.
-2. **Tabla de Alumnos**: Nombre, Maestro asignado, Nota, Edit/Delete.
-3. **Editar Calificación**: Modal con input de nota y observaciones, PATCH con JWT.
-4. **Eliminar Calificación**: Confirma y DELETE (Soft Delete) con JWT.
-5. **Reporte Global**: GET /controlescolar/reporte, visualiza promedio por alumno.
-
-```typescript
-axios.interceptors.request.use(config => {
-  const token = localStorage.getItem('token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+Authorization: Bearer <token>
 ```
 
 ---
 
-## 9. Instrucciones para Levantar el Proyecto
+## 🗄️ Modelo de Datos
 
-1. Clona el repositorio y entra a la carpeta raíz.
+### Entidades Principales
+
+#### Usuarios
+- `id` (PK)
+- `nombre` (STRING)
+- `email` (STRING, UNIQUE)
+- `password_hash` (STRING)
+- `rol` (ENUM: 'MAESTRO', 'CONTROL_ESCOLAR', 'ALUMNO')
+- `created_at`, `updated_at`
+
+#### Alumnos
+- `id` (PK)
+- `nombre` (STRING)
+- `matricula` (STRING, UNIQUE)
+- `grupo` (STRING)
+- `semestre` (INTEGER, opcional)
+- `fecha_nacimiento` (DATE, opcional)
+- `usuario_id` (FK → Usuarios)
+- `created_at`, `updated_at`
+
+#### Materias
+- `id` (PK)
+- `codigo` (STRING, UNIQUE)
+- `nombre` (STRING)
+- `descripcion` (TEXT, opcional)
+- `estatus` (INTEGER)
+- `created_at`, `updated_at`
+
+#### Asignaciones
+- `id` (PK)
+- `maestro_id` (FK → Usuarios)
+- `materia_id` (FK → Materias)
+- `cupo_maximo` (INTEGER, default: 40)
+- `created_at`, `updated_at`
+- **Índice único:** (maestro_id, materia_id)
+
+#### Calificaciones
+- `id` (PK)
+- `alumno_id` (FK → Alumnos)
+- `materia_id` (FK → Materias)
+- `maestro_id` (FK → Usuarios)
+- `nota` (DECIMAL, 0-10)
+- `observaciones` (TEXT, opcional)
+- `deleted_at` (DATE, opcional) - **Soft Delete**
+- `created_at`, `updated_at`
+
+### Relaciones
+
+- **Usuario** 1:1 **Alumno** (cuando rol = 'ALUMNO')
+- **Asignación** N:1 **Usuario** (maestro)
+- **Asignación** N:1 **Materia**
+- **Calificación** N:1 **Alumno**
+- **Calificación** N:1 **Materia**
+- **Calificación** N:1 **Usuario** (maestro)
+
+---
+
+## 🔑 Credenciales de Prueba
+
+El sistema incluye datos de prueba pre-configurados:
+
+### Administrador
+- **Email:** `admin@escuela.com`
+- **Password:** `password123`
+- **Rol:** Control Escolar
+
+### Maestros
+- **Email:** `juan.perez@escuela.com`
+- **Password:** `password123`
+- **Rol:** Maestro
+
+- **Email:** `ana.lopez@escuela.com`
+- **Password:** `password123`
+- **Rol:** Maestro
+
+### Alumnos
+- **Email:** `raul.castro@escuela.com`
+- **Password:** `password123`
+- **Rol:** Alumno
+- **Matrícula:** A1001
+- **Grupo:** A
+
+- **Email:** `sofia.garcia@escuela.com`
+- **Password:** `password123`
+- **Rol:** Alumno
+- **Matrícula:** A1002
+- **Grupo:** A
+
+- **Email:** `luis.hernandez@escuela.com`
+- **Password:** `password123`
+- **Rol:** Alumno
+- **Matrícula:** B2001
+- **Grupo:** B
+
+- **Email:** `carolina.diaz@escuela.com`
+- **Password:** `password123`
+- **Rol:** Alumno
+- **Matrícula:** B2002
+- **Grupo:** B
+
+---
+
+## 🐳 Docker
+
+### Comandos Útiles
 
 ```bash
-git clone <repo_url>
-cd proyecto-calificaciones
-```
+# Levantar todos los servicios
+docker-compose up -d
 
-2. Crea el archivo `.env` con tus credenciales y JWT secreto.
+# Ver logs
+docker-compose logs -f
 
-3. Asegúrate de tener **Docker** y **Docker Compose** instalados.
+# Ver logs de un servicio específico
+docker-compose logs -f backend
+docker-compose logs -f frontend
 
-4. Levanta todo el entorno con un solo comando:
-
-```bash
-docker-compose up --build
-```
-
-5. Accede a los servicios:
-
-- **Frontend:** [http://localhost:5173](http://localhost:5173)
-- **Backend:** [http://localhost:3000/api](http://localhost:3000/api)
-
-6. Para detener el proyecto:
-
-```bash
+# Detener servicios
 docker-compose down
+
+# Detener y eliminar volúmenes
+docker-compose down -v
+
+# Reconstruir imágenes
+docker-compose build --no-cache
+
+# Reiniciar un servicio específico
+docker-compose restart backend
 ```
 
-7. Para reiniciar con cambios:
+### Variables de Entorno
 
+El archivo `.env` debe contener:
+
+```env
+# Base de Datos
+DB_HOST=db
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=sistema_escolar
+
+# Backend
+PORT=3000
+JWT_SECRET=tu_secret_key_super_segura_cambiar_en_produccion
+NODE_ENV=development
+SEED_FORCE=false
+
+# Frontend
+VITE_API_URL=http://localhost:3000/api
+FRONTEND_URL=http://localhost:5173
+```
+
+**⚠️ Importante:** Cambiar `JWT_SECRET` y `DB_PASSWORD` en producción.
+
+---
+
+## 🔧 Desarrollo
+
+### Scripts Disponibles
+
+#### Backend
 ```bash
-docker-compose up --build
+npm run dev    # Desarrollo con nodemon (auto-reload)
+npm start      # Producción
+npm test       # Ejecutar tests
 ```
 
-> Nota: Los seeders insertarán automáticamente un Admin y dos Maestros.
+#### Frontend
+```bash
+npm run dev    # Servidor de desarrollo
+npm run build  # Build para producción
+npm run preview # Preview del build
+npm run lint   # Linter
+```
+
+### Persistencia de Datos
+
+Por defecto, el sistema **preserva los datos** al reiniciar. Los seeders solo se ejecutan si:
+- No existe el usuario `admin@escuela.com`, o
+- `SEED_FORCE=true` está configurado
+
+Para forzar la recreación de datos:
+```bash
+# En .env
+SEED_FORCE=true
+```
+
+### Base de Datos
+
+El sistema usa **Sequelize Sync** con `alter: true`, lo que significa que:
+- Las tablas se crean automáticamente si no existen
+- Los cambios en modelos se reflejan en la BD (con cuidado en producción)
+
+**⚠️ Para producción:** Usar migraciones explícitas en lugar de `sync({ alter: true })`.
 
 ---
 
-## 10. Notas Finales
-- Validar todas las notas entre 0 y 10.
-- JWT obligatorio en todas las rutas protegidas.
-- Docker Compose permite levantar todo el entorno en un comando.
-- Seeders deben crear al menos un Admin y dos Maestros.
+## 🎨 Sistema de Diseño
+
+### Paleta de Colores
+
+El sistema utiliza una paleta profesional basada en:
+- **Primary (Azul):** `#0ea5e9` - Acciones principales, headers
+- **Secondary (Púrpura):** `#a855f7` - Panel de maestros, elementos secundarios
+- **Accent (Verde):** `#22c55e` - Éxito, acciones positivas
+- **Neutral (Gris):** Escala completa para textos y fondos
+
+### Animaciones
+
+- **fade-in:** Aparición suave
+- **fade-in-up:** Aparición desde abajo
+- **fade-in-down:** Aparición desde arriba
+- **slide-in-right/left:** Deslizamiento lateral
+- **scale-in:** Escalado suave
+- **bounce-subtle:** Bounce sutil para iconos
 
 ---
 
-# Omar Bermejo Osuna - 11/12/2025
+## 📝 Notas Importantes
+
+1. **Seguridad:**
+   - Las contraseñas se hashean con bcrypt
+   - Los tokens JWT expiran (configurar en producción)
+   - Helmet protege contra vulnerabilidades comunes
+
+2. **Soft Delete:**
+   - Las calificaciones usan soft delete (`deleted_at`)
+   - No se eliminan físicamente de la base de datos
+
+3. **Validaciones:**
+   - Escala de calificaciones: 0.00 a 10.00
+   - Emails normalizados (lowercase, trim)
+   - Validación robusta con express-validator
+
+4. **Performance:**
+   - Índices en campos críticos (email, matricula)
+   - Queries optimizadas con Sequelize includes
+   - Paginación recomendada para grandes volúmenes
+
+---
+
+## 🤝 Contribución
+
+Este proyecto es parte de una prueba técnica. Para contribuciones:
+
+1. Fork el repositorio
+2. Crea una rama para tu feature (`git checkout -b feature/nueva-funcionalidad`)
+3. Commit tus cambios (`git commit -m 'Agregar nueva funcionalidad'`)
+4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
+5. Abre un Pull Request
+
+---
+
+## 📄 Licencia
+
+Este proyecto es de uso educativo y demostrativo.
+
+---
+
+## 📞 Soporte
+
+Para problemas o preguntas, consulta la documentación de los endpoints en `/api` o revisa los logs del servidor.
+
+---
+
+**Desarrollado con ❤️ usando React, Node.js y PostgreSQL**

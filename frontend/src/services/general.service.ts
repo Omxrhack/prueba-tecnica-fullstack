@@ -48,4 +48,21 @@ export const getMaestros = async (): Promise<MaestroListItem[]> => {
 // export const getCalificacionesByMateria = async (materiaID: number) => { ... }
 
 
+/**
+ * 3. Obtiene la lista completa de Alumnos.
+ * GET /api/alumnos/list
+ */
+export interface AlumnoListItem {
+    id: number;
+    nombre: string;
+    matricula: string;
+    grupo: string;
+    semestre?: number;
+}
+
+export const getAlumnos = async (): Promise<AlumnoListItem[]> => {
+    const response = await api.get<{ data: AlumnoListItem[] }>('/alumnos/list');
+    return response.data.data;
+};
+
 // Exportamos solo los servicios esenciales que necesita la UI.

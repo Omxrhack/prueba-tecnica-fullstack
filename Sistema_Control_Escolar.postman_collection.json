@@ -1,0 +1,431 @@
+{
+	"info": {
+		"_postman_id": "control-escolar-api",
+		"name": "Sistema de Control Escolar - API",
+		"description": "Colección completa de endpoints para el Sistema de Gestión y Reporte de Calificaciones Escolares",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwt_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000/api",
+			"type": "string"
+		},
+		{
+			"key": "jwt_token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Autenticación",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"jwt_token\", jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@escuela.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Autentica las credenciales del usuario y retorna un token JWT de acceso."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Maestro",
+			"item": [
+				{
+					"name": "Obtener Materias Asignadas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/maestro/materias",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"maestro",
+								"materias"
+							]
+						},
+						"description": "Obtiene la lista de materias asignadas al maestro autenticado."
+					}
+				},
+				{
+					"name": "Obtener Alumnos Asignados",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/maestro/alumnos",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"maestro",
+								"alumnos"
+							]
+						},
+						"description": "Obtiene el listado global de alumnos asignados al maestro autenticado con sus calificaciones."
+					}
+				},
+				{
+					"name": "Obtener Alumnos por Materia",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/maestro/alumnos/:materiaID",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"maestro",
+								"alumnos",
+								":materiaID"
+							],
+							"variable": [
+								{
+									"key": "materiaID",
+									"value": "1",
+									"description": "ID de la materia"
+								}
+							]
+						},
+						"description": "Obtiene los alumnos inscritos en una materia específica asignada al maestro."
+					}
+				},
+				{
+					"name": "Obtener Detalle Alumno",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/maestro/alumnos/:materiaID/:alumnoID",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"maestro",
+								"alumnos",
+								":materiaID",
+								":alumnoID"
+							],
+							"variable": [
+								{
+									"key": "materiaID",
+									"value": "1",
+									"description": "ID de la materia"
+								},
+								{
+									"key": "alumnoID",
+									"value": "1",
+									"description": "ID del alumno"
+								}
+							]
+						},
+						"description": "Obtiene el detalle de un alumno específico dentro de una materia específica."
+					}
+				},
+				{
+					"name": "Registrar/Actualizar Calificación",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nota\": 8.5,\n    \"observaciones\": \"Buen desempeño en el examen\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/maestro/calificaciones/:materiaID/:alumnoID",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"maestro",
+								"calificaciones",
+								":materiaID",
+								":alumnoID"
+							],
+							"variable": [
+								{
+									"key": "materiaID",
+									"value": "1",
+									"description": "ID de la materia"
+								},
+								{
+									"key": "alumnoID",
+									"value": "1",
+									"description": "ID del alumno"
+								}
+							]
+						},
+						"description": "Registra o actualiza la calificación (0-10) de un alumno en una materia específica."
+					}
+				}
+			]
+		},
+		{
+			"name": "Control Escolar (Admin)",
+			"item": [
+				{
+					"name": "Asignar Materia a Maestro",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"maestro_id\": 2,\n    \"materia_id\": 1,\n    \"cupo_maximo\": 40\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/controlescolar/asignacion",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"controlescolar",
+								"asignacion"
+							]
+						},
+						"description": "Asigna una materia a un maestro y define el cupo máximo de alumnos (por defecto 40)."
+					}
+				},
+				{
+					"name": "Reporte Global",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/controlescolar/reporte",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"controlescolar",
+								"reporte"
+							]
+						},
+						"description": "Genera un reporte global de promedios y calificaciones (0-10) por alumno."
+					}
+				},
+				{
+					"name": "Reporte por Materia",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/controlescolar/reporte/:materiaID",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"controlescolar",
+								"reporte",
+								":materiaID"
+							],
+							"variable": [
+								{
+									"key": "materiaID",
+									"value": "1",
+									"description": "ID de la materia"
+								}
+							]
+						},
+						"description": "Genera un reporte de promedios y calificaciones filtrado por una materia específica (0-10)."
+					}
+				},
+				{
+					"name": "Actualizar Calificación",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nota\": 9.0,\n    \"observaciones\": \"Excelente trabajo, mejoró significativamente\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/controlescolar/calificaciones/:materiaID/:alumnoID",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"controlescolar",
+								"calificaciones",
+								":materiaID",
+								":alumnoID"
+							],
+							"variable": [
+								{
+									"key": "materiaID",
+									"value": "1",
+									"description": "ID de la materia"
+								},
+								{
+									"key": "alumnoID",
+									"value": "1",
+									"description": "ID del alumno"
+								}
+							]
+						},
+						"description": "Actualiza la calificación (0-10) o las observaciones de un alumno en una materia específica."
+					}
+				},
+				{
+					"name": "Eliminar Calificación (Soft Delete)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/controlescolar/calificaciones/:materiaID/:alumnoID",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"controlescolar",
+								"calificaciones",
+								":materiaID",
+								":alumnoID"
+							],
+							"variable": [
+								{
+									"key": "materiaID",
+									"value": "1",
+									"description": "ID de la materia"
+								},
+								{
+									"key": "alumnoID",
+									"value": "1",
+									"description": "ID del alumno"
+								}
+							]
+						},
+						"description": "Elimina una calificación de manera lógica (soft delete), preservando el registro en la base de datos."
+					}
+				}
+			]
+		},
+		{
+			"name": "Rutas Generales",
+			"item": [
+				{
+					"name": "Obtener Materias",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/materias",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"materias"
+							]
+						},
+						"description": "Obtiene la lista completa de materias. Requiere autenticación."
+					}
+				},
+				{
+					"name": "Obtener Lista de Usuarios",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/usuarios/list",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"usuarios",
+								"list"
+							]
+						},
+						"description": "Obtiene la lista completa de usuarios (maestros y administradores). Requiere autenticación."
+					}
+				},
+				{
+					"name": "Health Check",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "Endpoint de salud del servidor. No requiere autenticación."
+					}
+				}
+			]
+		}
+	]
+}

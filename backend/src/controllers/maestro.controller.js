@@ -1,7 +1,83 @@
-const { Alumno, Calificacion, Materia } = require('../models');
+const { Alumno, Calificacion, Materia, Asignacion, Usuario } = require('../models');
 
 const MaestroController = {
     
+    /**
+     * Obtiene la lista de materias asignadas al maestro autenticado.
+     * GET /api/maestro/materias
+     */
+    async getMateriasAsignadas(req, res) {
+        const maestroId = req.user?.id;
+
+        if (!maestroId) {
+            return res.status(400).json({ message: 'ID de maestro no encontrado en el token.' });
+        }
+
+        try {
+            // Convertir a número por si acaso viene como string
+            const maestroIdNum = Number(maestroId);
+            
+            // Buscar asignaciones del maestro
+            const asignaciones = await Asignacion.findAll({
+                where: { 
+                    maestro_id: maestroIdNum 
+                },
+                include: [
+                    {
+                        model: Materia,
+                        attributes: ['id', 'nombre', 'codigo', 'descripcion']
+                    }
+                ],
+                raw: false
+            });
+            
+            // Mapear asignaciones a formato de respuesta
+            // Si las materias no se cargaron en el include, cargarlas manualmente
+            const materias = await Promise.all(asignaciones.map(async (a) => {
+                try {
+                    // Intentar obtener la materia de la relación primero
+                    let materia = a.Materia;
+                    
+                    // Si no está en la relación, cargarla manualmente
+                    if (!materia) {
+                        materia = await Materia.findByPk(a.materia_id);
+                    }
+                    
+                    if (!materia) {
+                        if (process.env.NODE_ENV === 'development') {
+                            console.warn(`Materia con ID ${a.materia_id} no existe en la BD`);
+                        }
+                        return null;
+                    }
+                    
+                    // Convertir a objeto plano si es necesario
+                    const materiaData = materia.toJSON ? materia.toJSON() : materia;
+                    
+                    return {
+                        id: materiaData.id,
+                        nombre: materiaData.nombre,
+                        codigo: materiaData.codigo || null,
+                        descripcion: materiaData.descripcion || null,
+                        cupo_maximo: a.cupo_maximo || 40
+                    };
+                } catch (mapError) {
+                    console.error('Error al mapear asignación:', mapError);
+                    return null;
+                }
+            }));
+            
+            // Filtrar nulls
+            const materiasFiltradas = materias.filter(m => m !== null);
+
+            res.json({
+                message: `Materias asignadas al maestro ID ${maestroId}`,
+                data: materiasFiltradas
+            });
+        } catch (error) {
+            console.error('Error al obtener materias asignadas:', error);
+            throw error; // El middleware de errores se encargará de formatear la respuesta
+        }
+    },
 
     /**
      * Obtiene la lista de alumnos a los que el maestro autenticado ha calificado,
@@ -14,8 +90,12 @@ const MaestroController = {
 
         try {
             // Buscamos todas las calificaciones registradas por este maestro.
+            // Filtramos por deleted_at IS NULL para excluir registros eliminados (soft delete)
             const calificaciones = await Calificacion.findAll({
-                where: { maestro_id: maestroId },
+                where: { 
+                    maestro_id: maestroId,
+                    deleted_at: null
+                },
                 include: [
                     { 
                         model: Alumno, 
@@ -93,6 +173,9 @@ const MaestroController = {
         // - Si el usuario autenticado tiene rol 'CONTROL_ESCOLAR' (o admin),
         //   permitimos que pase maestro_id en el body para asignar notas a otros maestros.
         // - En cualquier otro caso, siempre usamos el id del usuario autenticado.
+        const authUserId = req.user.id;
+        const authUserRol = req.user.rol;
+        
         let maestroId;
         if (authUserRol === 'CONTROL_ESCOLAR') {
             // Si control escolar envía maestro_id en body lo usamos, si no usamos su id
@@ -146,6 +229,125 @@ const MaestroController = {
                 return res.status(400).json({ message: 'Referencia inválida: alumno/materia/maestro no existe.' });
             }
             return res.status(500).json({ message: 'Error interno del servidor.' });
+        }
+    },
+
+    /**
+     * Obtiene los alumnos inscritos en una materia específica asignada al maestro.
+     * GET /api/maestro/alumnos/{materiaID}
+     */
+    async getAlumnosPorMateria(req, res) {
+        const maestroId = req.user.id;
+        const materiaId = req.params.materiaID;
+
+        try {
+            // Verificar que el maestro tenga asignada esta materia
+            const asignacion = await Asignacion.findOne({
+                where: { maestro_id: maestroId, materia_id: materiaId }
+            });
+
+            if (!asignacion) {
+                return res.status(403).json({ 
+                    message: 'No tienes asignada esta materia.' 
+                });
+            }
+
+            const calificaciones = await Calificacion.findAll({
+                where: { 
+                    maestro_id: maestroId,
+                    materia_id: materiaId,
+                    deleted_at: null
+                },
+                include: [
+                    {
+                        model: Alumno,
+                        attributes: ['id', 'nombre', 'matricula', 'grupo']
+                    },
+                    {
+                        model: Materia,
+                        attributes: ['id', 'nombre', 'codigo']
+                    }
+                ],
+                order: [[Alumno, 'nombre', 'ASC']]
+            });
+
+            const alumnos = calificaciones.map(c => ({
+                alumno: c.Alumno,
+                nota: c.nota,
+                observaciones: c.observaciones,
+                fecha_registro: c.created_at
+            }));
+
+            res.json({
+                message: `Alumnos de la materia ${materiaId} asignados al maestro ID ${maestroId}`,
+                data: alumnos
+            });
+        } catch (error) {
+            console.error('Error al obtener alumnos por materia:', error);
+            res.status(500).json({ message: 'Error interno del servidor.' });
+        }
+    },
+
+    /**
+     * Obtiene el detalle de un alumno específico dentro de una materia específica.
+     * GET /api/maestro/alumnos/{materiaID}/{alumnoID}
+     */
+    async getDetalleAlumno(req, res) {
+        const maestroId = req.user.id;
+        const materiaId = req.params.materiaID;
+        const alumnoId = req.params.alumnoID;
+
+        try {
+            // Verificar que el maestro tenga asignada esta materia
+            const asignacion = await Asignacion.findOne({
+                where: { maestro_id: maestroId, materia_id: materiaId }
+            });
+
+            if (!asignacion) {
+                return res.status(403).json({ 
+                    message: 'No tienes asignada esta materia.' 
+                });
+            }
+
+            const calificacion = await Calificacion.findOne({
+                where: { 
+                    maestro_id: maestroId,
+                    materia_id: materiaId,
+                    alumno_id: alumnoId,
+                    deleted_at: null
+                },
+                include: [
+                    {
+                        model: Alumno,
+                        attributes: ['id', 'nombre', 'matricula', 'grupo', 'fecha_nacimiento']
+                    },
+                    {
+                        model: Materia,
+                        attributes: ['id', 'nombre', 'codigo', 'descripcion']
+                    }
+                ]
+            });
+
+            if (!calificacion) {
+                return res.status(404).json({ 
+                    message: 'Calificación no encontrada o no tienes acceso a este registro.' 
+                });
+            }
+
+            res.json({
+                message: 'Detalle de alumno obtenido con éxito.',
+                data: {
+                    alumno: calificacion.Alumno,
+                    materia: calificacion.Materia,
+                    nota: calificacion.nota,
+                    observaciones: calificacion.observaciones,
+                    fecha_registro: calificacion.created_at,
+                    fecha_actualizacion: calificacion.updated_at
+                }
+            });
+        } catch (error) {
+            console.error('Error al obtener detalle de alumno:', error);
+            res.status(500).json({ message: 'Error interno del servidor.' });
         }
     }
     

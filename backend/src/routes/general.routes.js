@@ -23,4 +23,12 @@ router.get(
     GeneralController.getUsuariosList
 );
 
+// 3. OBTENER LISTA COMPLETA DE ALUMNOS
+// GET /api/alumnos/list
+router.get(
+    '/alumnos/list', 
+    verifyToken, 
+    GeneralController.getAlumnosList
+);
+
 module.exports = router;

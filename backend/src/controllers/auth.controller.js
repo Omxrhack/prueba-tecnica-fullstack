@@ -1,4 +1,4 @@
-const { Usuario } = require('../models');
+const { Usuario, sequelize } = require('../models');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -8,10 +8,6 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const AuthController = {
 
     async login(req, res) {
-        // AGREGAR ESTO PARA DIAGNÓSTICO
-        console.log('Datos recibidos en req.body:', req.body);
-        // FIN DIAGNÓSTICO
-        
         const { email, password } = req.body;
 
         if (!email || !password) {
@@ -20,10 +16,21 @@ const AuthController = {
         }
 
         try {
-            // 1. Buscar usuario por email
-            const user = await Usuario.findOne({ where: { email } });
+            // Normalizar email (lowercase y trim)
+            const emailNormalizado = email.toLowerCase().trim();
+
+            // 1. Buscar usuario por email (case-insensitive)
+            const user = await Usuario.findOne({ 
+                where: sequelize.where(
+                    sequelize.fn('LOWER', sequelize.col('email')), 
+                    emailNormalizado
+                )
+            });
 
             if (!user) {
+                if (process.env.NODE_ENV === 'development') {
+                    console.log(`Usuario no encontrado para email: ${emailNormalizado}`);
+                }
                 return res.status(401).json({ message: 'Credenciales inválidas.' });
             }
 
@@ -31,6 +38,9 @@ const AuthController = {
             const isMatch = await bcrypt.compare(password, user.password_hash);
 
             if (!isMatch) {
+                if (process.env.NODE_ENV === 'development') {
+                    console.log(`Contraseña no coincide para usuario: ${user.email}`);
+                }
                 return res.status(401).json({ message: 'Credenciales inválidas.' });
             }
 

@@ -16,8 +16,7 @@ Materia.hasMany(Calificacion, { foreignKey: 'materia_id' });
 Calificacion.belongsTo(Materia, { foreignKey: 'materia_id' });
 
 // Un Maestro (Usuario) registra muchas Calificaciones
-Usuario.hasMany(Calificacion, { foreignKey: 'maestro_id' });
-Calificacion.belongsTo(Usuario, { foreignKey: 'maestro_id' });
+Usuario.hasMany(Calificacion, { foreignKey: 'maestro_id', as: 'Calificaciones' });
 
 // Relaciones para la tabla Asignacion (Maestro-Materia)
 Usuario.hasMany(Asignacion, { foreignKey: 'maestro_id' });
@@ -25,6 +24,13 @@ Asignacion.belongsTo(Usuario, { foreignKey: 'maestro_id' });
 
 Materia.hasMany(Asignacion, { foreignKey: 'materia_id' });
 Asignacion.belongsTo(Materia, { foreignKey: 'materia_id' });
+
+// Relación entre Usuario y Alumno (un usuario puede ser un alumno)
+Usuario.hasOne(Alumno, { foreignKey: 'usuario_id' });
+Alumno.belongsTo(Usuario, { foreignKey: 'usuario_id' });
+
+// Relación de Calificacion con Usuario como Maestro (alias para queries)
+Calificacion.belongsTo(Usuario, { foreignKey: 'maestro_id', as: 'Maestro' });
 
 
 // Exportamos los modelos ya relacionados y la conexión
