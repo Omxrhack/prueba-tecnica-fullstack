@@ -1,10 +1,10 @@
-# 🎓 Sistema de Control Escolar
+# Sistema de Control Escolar
 
 Sistema web full-stack profesional para la gestión integral de calificaciones escolares, diseñado con una arquitectura moderna, interfaz intuitiva y animaciones fluidas.
 
 ---
 
-## 📋 Tabla de Contenidos
+## Tabla de Contenidos
 
 - [Descripción General](#-descripción-general)
 - [Características Principales](#-características-principales)
@@ -21,7 +21,7 @@ Sistema web full-stack profesional para la gestión integral de calificaciones e
 
 ---
 
-## 🎯 Descripción General
+## Descripción General
 
 Sistema completo de gestión escolar que permite a diferentes roles (Administradores, Maestros y Alumnos) gestionar y consultar calificaciones de manera eficiente. El sistema incluye funcionalidades avanzadas como asignación de materias, gestión de calificaciones, reportes estadísticos y una interfaz moderna con animaciones fluidas.
 
@@ -30,39 +30,47 @@ Sistema completo de gestión escolar que permite a diferentes roles (Administrad
 ## ✨ Características Principales
 
 ### 👨‍💼 Panel de Administrador (Control Escolar)
-- ✅ Gestión completa de materias, maestros y alumnos
-- ✅ Asignación de maestros a materias
-- ✅ Asignación masiva de alumnos por grupo o semestre
-- ✅ Creación de usuarios (Maestro, Alumno, Admin)
-- ✅ Edición y eliminación de calificaciones
-- ✅ Reportes globales de promedios por alumno
-- ✅ Reportes detallados por materia
-- ✅ Búsqueda y filtrado avanzado
+-  Gestión completa de materias, maestros y alumnos
+-  Creación y edición de materias con asignación de semestre (1-8)
+-  Asignación de maestros a materias
+-  Asignación de materias a alumnos (individual o múltiple)
+-  Creación de usuarios (Maestro, Alumno, Admin)
+-  Edición y eliminación de calificaciones por unidad
+-  Vinculación de usuarios a registros de alumnos
+-  Reportes globales de promedios por alumno (limitado a 10 estudiantes)
+-  Reportes detallados por materia con calificaciones por unidad
+-  Vista detallada de alumno con materias cursando, cursadas y faltantes
+-  Búsqueda y filtrado avanzado por semestre
+-  **Selectores de materias agrupados por semestre** con títulos visuales destacados
+-  **Dropdowns interactivos** con funcionalidad de abrir/cerrar automático
+-  Filtrado global por semestre (materias, alumnos, reportes)
+-  Soft delete de alumnos y materias
 
-### 👨‍🏫 Panel de Maestro
-- ✅ Visualización de materias asignadas
-- ✅ Gestión de calificaciones de alumnos
-- ✅ Búsqueda y filtrado de alumnos
-- ✅ Registro de observaciones por calificación
-- ✅ Vista de cupo disponible por materia
+### Panel de Maestro
+-  Visualización de materias asignadas
+-  Gestión de calificaciones por unidad (1-5) para cada alumno
+-  Búsqueda y filtrado de alumnos
+-  Registro de observaciones por calificación
+-  Vista de cupo disponible por materia
+-  Visualización de calificaciones previas por unidad
 
-### 👨‍🎓 Panel de Alumno
-- ✅ Consulta de calificaciones propias
-- ✅ Visualización de promedio general
-- ✅ Detalle por materia con información del maestro
-- ✅ Historial completo de calificaciones
+### Panel de Alumno
+-  Consulta de calificaciones propias
+-  Visualización de promedio general
+-  Detalle por materia con información del maestro
+-  Historial completo de calificaciones
 
-### 🎨 Diseño y UX
-- ✅ Interfaz moderna con gradientes profesionales
-- ✅ Animaciones fluidas y transiciones suaves
-- ✅ Diseño responsive (móvil, tablet, desktop)
-- ✅ Colores profesionales (Primary, Secondary, Accent)
-- ✅ Componentes reutilizables y estilizados
-- ✅ Feedback visual en todas las acciones
+### Diseño y UX
+-  Interfaz moderna con gradientes profesionales
+-  Animaciones fluidas y transiciones suaves
+-  Diseño responsive (móvil, tablet, desktop)
+-  Colores profesionales (Primary, Secondary, Accent)
+-  Componentes reutilizables y estilizados
+-  Feedback visual en todas las acciones
 
 ---
 
-## 🏗️ Arquitectura del Sistema
+## Arquitectura del Sistema
 
 El proyecto sigue una arquitectura **monorepo** con separación clara entre backend y frontend:
 
@@ -89,7 +97,7 @@ prueba-tecnica-fullstack/
 
 ---
 
-## 🛠️ Tecnologías Utilizadas
+## Tecnologías Utilizadas
 
 ### Backend
 - **Node.js** (v22+) - Runtime JavaScript
@@ -117,7 +125,7 @@ prueba-tecnica-fullstack/
 
 ---
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 prueba-tecnica-fullstack/
@@ -186,7 +194,7 @@ prueba-tecnica-fullstack/
 
 ---
 
-## 🚀 Instalación y Configuración
+## Instalación y Configuración
 
 ### Prerrequisitos
 
@@ -290,7 +298,7 @@ prueba-tecnica-fullstack/
 
 ---
 
-## 📖 Uso del Sistema
+## Uso del Sistema
 
 ### Inicio de Sesión
 
@@ -301,26 +309,33 @@ prueba-tecnica-fullstack/
 ### Flujo de Trabajo
 
 #### Para Administradores:
-1. Crear materias, maestros y alumnos
+1. Crear materias (con semestre 1-8), maestros y alumnos
 2. Asignar maestros a materias
-3. Asignar alumnos a materias (individual o por grupo/semestre)
-4. Gestionar calificaciones (editar/eliminar)
-5. Consultar reportes globales y por materia
+3. Asignar alumnos a materias (individual o múltiple) usando selectores agrupados por semestre
+4. Gestionar calificaciones por unidad (editar/eliminar unidades específicas)
+5. Vincular usuarios a registros de alumnos
+6. Consultar reportes globales (hasta 10 estudiantes) y por materia
+7. Filtrar materias, alumnos y reportes por semestre
+8. Ver detalle completo de cada alumno (materias cursando, cursadas, faltantes por semestre)
+9. Navegar selectores de materias organizados por semestre con títulos visuales destacados
 
 #### Para Maestros:
 1. Seleccionar una materia asignada
 2. Ver lista de alumnos inscritos
-3. Registrar o editar calificaciones
-4. Agregar observaciones
+3. Registrar o editar calificaciones por unidad (1-5)
+4. Agregar observaciones por calificación
+5. Ver historial de calificaciones por unidad de cada alumno
 
 #### Para Alumnos:
-1. Visualizar todas tus calificaciones
-2. Ver promedio general
-3. Consultar detalle por materia
+1. Visualizar todas tus calificaciones agrupadas por materia y unidad
+2. Ver promedio general y por semestre
+3. Consultar materias cursando (activas), cursadas y faltantes por semestre
+4. Ver detalle completo por materia con todas las unidades (1-5)
+5. Ver información de semestre actual y materias pendientes
 
 ---
 
-## 🔌 API Endpoints
+## API Endpoints
 
 ### Autenticación
 
@@ -358,10 +373,17 @@ prueba-tecnica-fullstack/
 | `GET` | `/api/controlescolar/reporte/:materiaID` | Detalle de calificaciones por materia |
 | `POST` | `/api/controlescolar/materias` | Crear materia (con asignación opcional) |
 | `POST` | `/api/controlescolar/materias/:materiaID/alumnos` | Asignar alumnos a materia |
+| `POST` | `/api/controlescolar/alumnos/:alumnoID/materias` | Asignar múltiples materias a un alumno |
 | `POST` | `/api/controlescolar/asignacion` | Asignar maestro a materia |
 | `POST` | `/api/controlescolar/usuarios` | Crear usuario (Maestro/Alumno/Admin) |
-| `PATCH` | `/api/controlescolar/calificaciones/:materiaID/:alumnoID` | Actualizar calificación |
-| `DELETE` | `/api/controlescolar/calificaciones/:materiaID/:alumnoID` | Eliminar calificación (soft delete) |
+| `GET` | `/api/controlescolar/alumnos/:alumnoID/detalle` | Obtener detalle completo de alumno |
+| `PATCH` | `/api/controlescolar/calificaciones/:materiaID/:alumnoID/:unidadID` | Actualizar calificación por unidad |
+| `PATCH` | `/api/controlescolar/materias/:materiaID` | Actualizar materia |
+| `PATCH` | `/api/controlescolar/maestros/:maestroID` | Actualizar maestro |
+| `PATCH` | `/api/controlescolar/alumnos/:alumnoID` | Actualizar alumno (incluye vincular usuario) |
+| `DELETE` | `/api/controlescolar/calificaciones/:materiaID/:alumnoID/:unidadID` | Eliminar calificación por unidad (soft delete) |
+| `DELETE` | `/api/controlescolar/materias/:materiaID` | Eliminar materia (soft delete) |
+| `DELETE` | `/api/controlescolar/alumnos/:alumnoID` | Eliminar alumno (soft delete) |
 
 ### Maestro
 
@@ -369,7 +391,7 @@ prueba-tecnica-fullstack/
 |--------|----------|-------------|
 | `GET` | `/api/maestro/materias` | Lista de materias asignadas |
 | `GET` | `/api/maestro/alumnos` | Lista de alumnos por materia |
-| `POST` | `/api/maestro/calificaciones` | Registrar calificación |
+| `POST` | `/api/maestro/calificaciones` | Registrar calificación (por unidad 1-5) |
 
 ### Alumno
 
@@ -421,6 +443,7 @@ Authorization: Bearer <token>
 - `codigo` (STRING, UNIQUE)
 - `nombre` (STRING)
 - `descripcion` (TEXT, opcional)
+- `semestre` (INTEGER, 1-8) - **Semestre al que pertenece la materia**
 - `estatus` (INTEGER)
 - `created_at`, `updated_at`
 
@@ -438,6 +461,7 @@ Authorization: Bearer <token>
 - `materia_id` (FK → Materias)
 - `maestro_id` (FK → Usuarios)
 - `nota` (DECIMAL, 0-10)
+- `unidad` (INTEGER, 1-5) - **Número de unidad de evaluación**
 - `observaciones` (TEXT, opcional)
 - `deleted_at` (DATE, opcional) - **Soft Delete**
 - `created_at`, `updated_at`
@@ -453,9 +477,9 @@ Authorization: Bearer <token>
 
 ---
 
-## 🔑 Credenciales de Prueba
+## Credenciales de Prueba
 
-El sistema incluye datos de prueba pre-configurados:
+El sistema incluye datos de prueba pre-configurados (50 maestros, 50 materias, 50 alumnos):
 
 ### Administrador
 - **Email:** `admin@escuela.com`
@@ -498,7 +522,7 @@ El sistema incluye datos de prueba pre-configurados:
 
 ---
 
-## 🐳 Docker
+## Docker
 
 ### Comandos Útiles
 
@@ -548,11 +572,11 @@ VITE_API_URL=http://localhost:3000/api
 FRONTEND_URL=http://localhost:5173
 ```
 
-**⚠️ Importante:** Cambiar `JWT_SECRET` y `DB_PASSWORD` en producción.
+**Importante:** Cambiar `JWT_SECRET` y `DB_PASSWORD` en producción.
 
 ---
 
-## 🔧 Desarrollo
+## Desarrollo
 
 ### Scripts Disponibles
 
@@ -589,11 +613,11 @@ El sistema usa **Sequelize Sync** con `alter: true`, lo que significa que:
 - Las tablas se crean automáticamente si no existen
 - Los cambios en modelos se reflejan en la BD (con cuidado en producción)
 
-**⚠️ Para producción:** Usar migraciones explícitas en lugar de `sync({ alter: true })`.
+**Para producción:** Usar migraciones explícitas en lugar de `sync({ alter: true })`.
 
 ---
 
-## 🎨 Sistema de Diseño
+##  Sistema de Diseño
 
 ### Paleta de Colores
 
@@ -614,7 +638,7 @@ El sistema utiliza una paleta profesional basada en:
 
 ---
 
-## 📝 Notas Importantes
+## Notas Importantes
 
 1. **Seguridad:**
    - Las contraseñas se hashean con bcrypt
@@ -622,11 +646,14 @@ El sistema utiliza una paleta profesional basada en:
    - Helmet protege contra vulnerabilidades comunes
 
 2. **Soft Delete:**
-   - Las calificaciones usan soft delete (`deleted_at`)
+   - Las calificaciones y alumnos usan soft delete (`deleted_at`)
    - No se eliminan físicamente de la base de datos
+   - Permite recuperación de datos eliminados
 
 3. **Validaciones:**
    - Escala de calificaciones: 0.00 a 10.00
+   - Unidades por materia: 1 a 5
+   - Semestres: 1 a 8
    - Emails normalizados (lowercase, trim)
    - Validación robusta con express-validator
 
@@ -635,9 +662,15 @@ El sistema utiliza una paleta profesional basada en:
    - Queries optimizadas con Sequelize includes
    - Paginación recomendada para grandes volúmenes
 
+5. **Interfaz de Usuario:**
+   - Selectores de materias agrupados visualmente por semestre para mejor navegación
+   - Dropdowns personalizados con mejor UX que los selectores HTML nativos
+   - Filtrado en tiempo real sin recargar la página
+   - Visualización clara de relaciones entre materias y semestres
+
 ---
 
-## 🤝 Contribución
+## Contribución
 
 Este proyecto es parte de una prueba técnica. Para contribuciones:
 
@@ -649,13 +682,13 @@ Este proyecto es parte de una prueba técnica. Para contribuciones:
 
 ---
 
-## 📄 Licencia
+##  Licencia
 
 Este proyecto es de uso educativo y demostrativo.
 
 ---
 
-## 📞 Soporte
+## Soporte
 
 Para problemas o preguntas, consulta la documentación de los endpoints en `/api` o revisa los logs del servidor.
 

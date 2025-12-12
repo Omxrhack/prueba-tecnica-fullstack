@@ -20,19 +20,22 @@ export interface ReporteItem {
 
 // Estructura para la vista detallada de calificaciones por materia
 export interface CalificacionMateriaItem {
-    id: number;
-    nota: string; // El backend suele devolver decimales como string
-    observaciones: string;
     alumno: {
         id: number;
         nombre: string;
         matricula: string;
         grupo: string;
     };
-    maestro?: {
-        id: number;
-        nombre: string;
-    };
+    unidades: {
+        unidad: number;
+        nota: number;
+        observaciones?: string;
+        maestro?: {
+            id: number;
+            nombre: string;
+        };
+    }[];
+    promedio_materia: number;
 }
 
 interface AsignacionPayload {
@@ -138,23 +141,25 @@ export const updateCalificacionAdmin = async (
     materiaID: number,
     alumnoID: number,
     nota: number,
-    observaciones?: string
+    observaciones?: string,
+    unidad?: number
 ) => {
     if (!Number.isFinite(materiaID) || materiaID <= 0) throw new Error('IDs inválidos.');
     if (!Number.isFinite(alumnoID) || alumnoID <= 0) throw new Error('IDs inválidos.');
+    if (!Number.isFinite(nota) || nota < 0 || nota > 10) throw new Error('Nota inválida (0-10).');
 
-    // Validación 0-10
-    if (!Number.isFinite(nota) || nota < 0 || nota > 10) {
-        throw new Error('Nota inválida. Debe ser un número entre 0 y 10.');
-    }
-
-    const payload = {
-        nota: Number(nota.toFixed(2)),
-        ...(observaciones ? { observaciones } : {}),
+    const payload: { nota: number; observaciones?: string; unidad?: number } = {
+        nota: Number(nota.toFixed(2))
     };
+    if (observaciones) payload.observaciones = observaciones;
+    if (unidad) payload.unidad = unidad;
+
+    const endpoint = unidad
+        ? `/controlescolar/calificaciones/${materiaID}/${alumnoID}/${unidad}`
+        : `/controlescolar/calificaciones/${materiaID}/${alumnoID}`;
 
     const apiCall = async () => {
-        const response = await api.patch(`/controlescolar/calificaciones/${materiaID}/${alumnoID}`, payload, {
+        const response = await api.patch(endpoint, payload, {
             timeout: 15000,
         });
         return response.data;
@@ -163,12 +168,16 @@ export const updateCalificacionAdmin = async (
 };
 
 // 4. ELIMINAR CALIFICACIÓN (DELETE)
-export const deleteCalificacionAdmin = async (materiaID: number, alumnoID: number) => {
+export const deleteCalificacionAdmin = async (materiaID: number, alumnoID: number, unidad?: number) => {
     if (!Number.isFinite(materiaID) || materiaID <= 0) throw new Error('IDs inválidos.');
     if (!Number.isFinite(alumnoID) || alumnoID <= 0) throw new Error('IDs inválidos.');
 
+    const endpoint = unidad
+        ? `/controlescolar/calificaciones/${materiaID}/${alumnoID}/${unidad}`
+        : `/controlescolar/calificaciones/${materiaID}/${alumnoID}`;
+
     const apiCall = async () => {
-        const res = await api.delete(`/controlescolar/calificaciones/${materiaID}/${alumnoID}`, {
+        const res = await api.delete(endpoint, {
             timeout: 12000,
         });
         return res.data;
@@ -210,6 +219,14 @@ export interface CrearMateriaPayload {
     descripcion?: string;
     maestro_id?: number;
     cupo_maximo?: number;
+    semestre?: number;
+}
+
+export interface UpdateMateriaPayload {
+    nombre?: string;
+    codigo?: string;
+    descripcion?: string;
+    semestre?: number;
 }
 
 export interface CrearMateriaResponse {
@@ -236,6 +253,19 @@ export const crearMateria = async (payload: CrearMateriaPayload) => {
         return res.data;
     };
     return withRetry(apiCall, 'Error al crear materia');
+};
+
+// 13. ACTUALIZAR MATERIA (PATCH)
+export const updateMateriaAdmin = async (materiaID: number, payload: UpdateMateriaPayload) => {
+    if (!Number.isFinite(materiaID) || materiaID <= 0) throw new Error('ID de materia inválido.');
+
+    const apiCall = async () => {
+        const res = await api.patch(`/controlescolar/materias/${materiaID}`, payload, {
+            timeout: 12000,
+        });
+        return res.data;
+    };
+    return withRetry(apiCall, 'Error al actualizar materia');
 };
 
 // 10. ASIGNAR ALUMNOS A MATERIA (POST)
@@ -267,6 +297,46 @@ export const asignarAlumnosAMateria = async (materiaID: number, payload: Asignar
     return withRetry(apiCall, 'Error al asignar alumnos a la materia');
 };
 
+// 14. ASIGNAR MATERIAS A ALUMNO (POST)
+export interface AsignarMateriasPayload {
+    materia_ids: number[];
+}
+
+export interface AsignarMateriasResponse {
+    message: string;
+    data: {
+        alumno: {
+            id: number;
+            nombre: string;
+            matricula: string;
+        };
+        materias_asignadas: number;
+        materias_ya_inscritas: number;
+        materias_nuevas: Array<{
+            id: number;
+            nombre: string;
+            codigo: string;
+            maestro: {
+                id: number;
+                nombre: string;
+            } | null;
+        }>;
+    };
+}
+
+export const asignarMateriasAAlumno = async (alumnoID: number, payload: AsignarMateriasPayload) => {
+    if (!Number.isFinite(alumnoID) || alumnoID <= 0) throw new Error('ID de alumno inválido.');
+    if (!payload.materia_ids || !Array.isArray(payload.materia_ids) || payload.materia_ids.length === 0) {
+        throw new Error('Debe proporcionar al menos una materia para asignar.');
+    }
+
+    const apiCall = async () => {
+        const res = await api.post<AsignarMateriasResponse>(`/controlescolar/alumnos/${alumnoID}/materias`, payload);
+        return res.data;
+    };
+    return withRetry(apiCall, 'Error al asignar materias al alumno');
+};
+
 // 9. CREAR USUARIO (POST) - Universal para maestros, alumnos y admins
 export interface CrearUsuarioPayload {
     nombre: string;
@@ -285,4 +355,183 @@ export const crearUsuario = async (payload: CrearUsuarioPayload) => {
         return res.data;
     };
     return withRetry(apiCall, 'Error al crear usuario');
+};
+
+// 11. ELIMINAR ALUMNO (DELETE)
+export const deleteAlumnoAdmin = async (alumnoID: number) => {
+    if (!Number.isFinite(alumnoID) || alumnoID <= 0) throw new Error('ID de alumno inválido.');
+
+    const apiCall = async () => {
+        const res = await api.delete(`/controlescolar/alumnos/${alumnoID}`, {
+            timeout: 12000,
+        });
+        return res.data;
+    };
+    return withRetry(apiCall, 'Error al eliminar alumno');
+};
+
+// 12. ELIMINAR MATERIA (DELETE)
+export const deleteMateriaAdmin = async (materiaID: number) => {
+    if (!Number.isFinite(materiaID) || materiaID <= 0) throw new Error('ID de materia inválido.');
+
+    const apiCall = async () => {
+        const res = await api.delete(`/controlescolar/materias/${materiaID}`, {
+            timeout: 12000,
+        });
+        return res.data;
+    };
+    return withRetry(apiCall, 'Error al eliminar materia');
+};
+
+// 14. ACTUALIZAR MAESTRO (PATCH)
+export interface UpdateMaestroPayload {
+    nombre?: string;
+    email?: string;
+    password?: string;
+}
+
+export const updateMaestroAdmin = async (maestroID: number, payload: UpdateMaestroPayload) => {
+    if (!Number.isFinite(maestroID) || maestroID <= 0) throw new Error('ID de maestro inválido.');
+
+    const apiCall = async () => {
+        const res = await api.patch(`/controlescolar/maestros/${maestroID}`, payload, {
+            timeout: 12000,
+        });
+        return res.data;
+    };
+    return withRetry(apiCall, 'Error al actualizar maestro');
+};
+
+// 15. ACTUALIZAR ALUMNO (PATCH)
+export interface UpdateAlumnoPayload {
+    nombre?: string;
+    matricula?: string;
+    grupo?: string;
+    fecha_nacimiento?: string;
+    semestre?: number;
+    usuario_id?: number | null;
+}
+
+export const updateAlumnoAdmin = async (alumnoID: number, payload: UpdateAlumnoPayload) => {
+    if (!Number.isFinite(alumnoID) || alumnoID <= 0) throw new Error('ID de alumno inválido.');
+
+    const apiCall = async () => {
+        const res = await api.patch(`/controlescolar/alumnos/${alumnoID}`, payload, {
+            timeout: 12000,
+        });
+        return res.data;
+    };
+    return withRetry(apiCall, 'Error al actualizar alumno');
+};
+
+// 16. OBTENER DETALLE DE ALUMNO (GET)
+export interface DetalleAlumnoResponse {
+    alumno: {
+        id: number;
+        nombre: string;
+        matricula: string;
+        grupo: string;
+        semestre_actual: number;
+    };
+    calificaciones: Array<{
+        materia: {
+            id: number;
+            nombre: string;
+            codigo: string;
+            semestre: number;
+        };
+        maestro: {
+            id: number;
+            nombre: string;
+        } | null;
+        unidades: Array<{
+            unidad: number;
+            nota: number;
+            observaciones?: string;
+        }>;
+        promedio_materia: number;
+        activa?: number; // 1 = cursando, 0 = no cursando
+        cursando?: boolean;
+    }>;
+    materias_cursando?: Array<{
+        materia: {
+            id: number;
+            nombre: string;
+            codigo: string;
+            semestre: number;
+        };
+        maestro: {
+            id: number;
+            nombre: string;
+        } | null;
+        unidades: Array<{
+            unidad: number;
+            nota: number;
+            observaciones?: string;
+        }>;
+        promedio_materia: number;
+        activa?: number;
+        cursando?: boolean;
+    }>;
+    materias_por_semestre: Record<number, {
+        cursadas: Array<{
+            materia: {
+                id: number;
+                nombre: string;
+                codigo: string;
+                semestre: number;
+            };
+            maestro: {
+                id: number;
+                nombre: string;
+            } | null;
+            unidades: Array<{
+                unidad: number;
+                nota: number;
+                observaciones?: string;
+            }>;
+            promedio_materia: number;
+            activa?: number;
+            cursando?: boolean;
+        }>;
+        cursando?: Array<{
+            materia: {
+                id: number;
+                nombre: string;
+                codigo: string;
+                semestre: number;
+            };
+            maestro: {
+                id: number;
+                nombre: string;
+            } | null;
+            unidades: Array<{
+                unidad: number;
+                nota: number;
+                observaciones?: string;
+            }>;
+            promedio_materia: number;
+            activa?: number;
+            cursando?: boolean;
+        }>;
+        faltantes: Array<{ materia: { id: number; nombre: string; codigo: string; semestre: number } }>;
+        promedio_semestre: number;
+    }>;
+    promedio_general: number;
+    promedio_general_semestres: number;
+    total_materias_cursadas: number;
+    total_materias_cursando?: number;
+    total_semestres: number;
+}
+
+export const getDetalleAlumnoAdmin = async (alumnoID: number): Promise<DetalleAlumnoResponse> => {
+    if (!Number.isFinite(alumnoID) || alumnoID <= 0) throw new Error('ID de alumno inválido.');
+
+    const apiCall = async () => {
+        const res = await api.get<{ data: DetalleAlumnoResponse }>(`/controlescolar/alumnos/${alumnoID}/detalle`, {
+            timeout: 12000,
+        });
+        return res.data.data;
+    };
+    return withRetry(apiCall, 'Error al obtener detalle del alumno');
 };

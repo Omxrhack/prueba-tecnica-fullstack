@@ -58,11 +58,22 @@ export interface AlumnoListItem {
     matricula: string;
     grupo: string;
     semestre?: number;
+    usuario_id?: number | null;
 }
 
 export const getAlumnos = async (): Promise<AlumnoListItem[]> => {
     const response = await api.get<{ data: AlumnoListItem[] }>('/alumnos/list');
     return response.data.data;
+};
+
+/**
+ * Obtiene la lista de usuarios con rol ALUMNO que no tienen un alumno vinculado.
+ * GET /api/usuarios/list
+ */
+export const getUsuariosAlumnosDisponibles = async (): Promise<User[]> => {
+    const response = await api.get<{ data: User[] }>('/usuarios/list');
+    // Filtrar solo usuarios con rol ALUMNO
+    return response.data.data.filter(u => u.rol === 'ALUMNO');
 };
 
 // Exportamos solo los servicios esenciales que necesita la UI.

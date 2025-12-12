@@ -29,11 +29,24 @@ export interface Materia {
     nombre: string;
     codigo: string;
     descripcion?: string;
+    semestre?: number;
+}
+
+export interface CalificacionUnidad {
+    unidad: number;
+    nota: number;
+    observaciones?: string;
+    fecha_registro?: string;
+    fecha_actualizacion?: string;
+    maestro?: {
+        id: number;
+        nombre: string;
+    };
 }
 
 export interface CalificacionDetalle {
     calificacion_id: number;
     materia: string;
-    nota: string; // La nota es un string/decimal en JS
+    nota: string;
     fecha_registro: string;
 }

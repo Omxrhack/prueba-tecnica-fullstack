@@ -7,6 +7,8 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const { sequelize } = require('./src/models');
 const runSeeds = require('./src/seeders/runSeeds');
+const migrateUnidad = require('./src/migrations/addUnidadColumn');
+const migrateSemestre = require('./src/migrations/addSemestreColumn');
 const errorHandler = require('./src/middlewares/errorHandler.middleware');
 
 // RUTAS NECESARIAS PARA LOS GET Y POST
@@ -67,10 +69,22 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log(' Conexión a la Base de Datos establecida correctamente.');
 
+    // Ejecutar migraciones primero
+    try {
+      await migrateUnidad();
+    } catch (migrationError) {
+      console.warn(' Advertencia en migración de unidad (puede ser que ya exista):', migrationError.message);
+    }
+
+    try {
+      await migrateSemestre();
+    } catch (migrationError) {
+      console.warn('  Advertencia en migración de semestre (puede ser que ya exista):', migrationError.message);
+    }
+
     // Sincronizar modelos (crear/actualizar tablas)
     await sequelize.sync({ alter: true });
     console.log(' Modelos y Relaciones sincronizados.');
-
 
     await runSeeds(); 
 

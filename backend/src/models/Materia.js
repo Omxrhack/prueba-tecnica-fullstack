@@ -18,8 +18,18 @@ const Materia = sequelize.define('Materia', {
   descripcion: {
     type: DataTypes.TEXT
   },
+  semestre: {
+    type: DataTypes.INTEGER,
+    allowNull: true, // Temporalmente nullable para permitir migración
+    validate: {
+      min: 1,
+      max: 8
+    },
+    defaultValue: 1,
+    comment: 'Semestre al que pertenece la materia (1-8)'
+  },
   estatus: {
-    type: DataTypes.INTEGER, // Byte en SQL suele mapearse a Integer o Boolean en ORMs
+    type: DataTypes.INTEGER,
     defaultValue: 1
   }
 }, {

@@ -38,8 +38,10 @@ const Alumno = sequelize.define('Alumno', {
 }, {
   tableName: 'alumnos',
   timestamps: true,
+  paranoid: true,
   createdAt: 'created_at',
-  updatedAt: 'updated_at'
+  updatedAt: 'updated_at',
+  deletedAt: 'deleted_at'
 });
 
 module.exports = Alumno;

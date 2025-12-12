@@ -9,10 +9,13 @@ const GeneralController = {
      */
     async getMaterias(req, res) {
         try {
-            // Solo obtener ID, nombre y código para ser ligero
+            // Obtener ID, nombre, código y semestre (sin límite, todas las materias)
             const materias = await Materia.findAll({ 
-                attributes: ['id', 'nombre', 'codigo'] 
+                attributes: ['id', 'nombre', 'codigo', 'descripcion', 'semestre'],
+                order: [['semestre', 'ASC'], ['nombre', 'ASC']]
             });
+            
+            console.log(`[getMaterias] Total de materias encontradas: ${materias.length}`);
             
             res.json({
                 message: 'Lista de materias obtenida con éxito.',
@@ -30,10 +33,15 @@ const GeneralController = {
      */
     async getUsuariosList(req, res) {
         try {
-            // Obtenemos todos los usuarios, excluyendo el hash de la contraseña
+            // Obtenemos todos los usuarios, excluyendo el hash de la contraseña (sin límite)
             const usuarios = await Usuario.findAll({ 
-                attributes: ['id', 'nombre', 'email', 'rol'] 
+                attributes: ['id', 'nombre', 'email', 'rol'],
+                order: [['rol', 'ASC'], ['nombre', 'ASC']]
             });
+            
+            console.log(`[getUsuariosList] Total de usuarios encontrados: ${usuarios.length}`);
+            const maestrosCount = usuarios.filter(u => u.rol === 'MAESTRO').length;
+            console.log(`[getUsuariosList] Maestros: ${maestrosCount}, Alumnos: ${usuarios.filter(u => u.rol === 'ALUMNO').length}, Admin: ${usuarios.filter(u => u.rol === 'CONTROL_ESCOLAR').length}`);
             
             res.json({
                 message: 'Lista de usuarios obtenida con éxito.',
@@ -51,14 +59,21 @@ const GeneralController = {
      */
     async getAlumnosList(req, res) {
         try {
+            // Obtener todos los alumnos (sin soft delete, incluir todos)
             const alumnos = await Alumno.findAll({ 
-                attributes: ['id', 'nombre', 'matricula', 'grupo', 'semestre'],
-                order: [['nombre', 'ASC']]
+                attributes: ['id', 'nombre', 'matricula', 'grupo', 'semestre', 'usuario_id'],
+                order: [['nombre', 'ASC']],
+                paranoid: false // Incluir todos los alumnos incluso si están eliminados temporalmente
             });
+            
+            // Filtrar solo los activos (sin deleted_at) para el frontend
+            const alumnosActivos = alumnos.filter(a => !a.deleted_at);
+            
+            console.log(`[getAlumnosList] Total de alumnos encontrados: ${alumnos.length} (activos: ${alumnosActivos.length})`);
             
             res.json({
                 message: 'Lista de alumnos obtenida con éxito.',
-                data: alumnos
+                data: alumnosActivos
             });
         } catch (error) {
             console.error('Error al obtener lista de alumnos:', error);

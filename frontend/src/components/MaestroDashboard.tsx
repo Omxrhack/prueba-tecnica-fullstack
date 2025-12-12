@@ -30,6 +30,7 @@ const MaestroDashboard: React.FC = () => {
     // Modal de calificación
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedAlumno, setSelectedAlumno] = useState<AlumnoPorMateria | null>(null);
+    const [selectedUnidad, setSelectedUnidad] = useState<number>(1);
     const [nota, setNota] = useState('');
     const [observaciones, setObservaciones] = useState('');
     const [saving, setSaving] = useState(false);
@@ -86,10 +87,19 @@ const MaestroDashboard: React.FC = () => {
         setSuccessMsg(null);
     };
 
-    const openModal = (alumno: AlumnoPorMateria) => {
+    const openModal = (alumno: AlumnoPorMateria, unidad?: number) => {
         setSelectedAlumno(alumno);
-        setNota(alumno.nota?.toString() || '');
-        setObservaciones(alumno.observaciones || '');
+        // Si se pasa una unidad específica, usar esa; si no, usar la unidad 1 o la primera no calificada
+        if (unidad) {
+            setSelectedUnidad(unidad);
+            const califUnidad = alumno.calificaciones.find(c => c.unidad === unidad);
+            setNota(califUnidad?.nota?.toString() || '');
+            setObservaciones(califUnidad?.observaciones || '');
+        } else {
+            setSelectedUnidad(1);
+            setNota('');
+            setObservaciones('');
+        }
         setError(null);
         setSuccessMsg(null);
         setIsModalOpen(true);
@@ -98,6 +108,7 @@ const MaestroDashboard: React.FC = () => {
     const closeModal = () => {
         setIsModalOpen(false);
         setSelectedAlumno(null);
+        setSelectedUnidad(1);
         setNota('');
         setObservaciones('');
     };
@@ -111,6 +122,11 @@ const MaestroDashboard: React.FC = () => {
             return;
         }
 
+        if (!selectedUnidad || selectedUnidad < 1 || selectedUnidad > 5) {
+            setError('La unidad debe ser un número entre 1 y 5.');
+            return;
+        }
+
         setSaving(true);
         setError(null);
         try {
@@ -118,14 +134,15 @@ const MaestroDashboard: React.FC = () => {
                 selectedMateriaId,
                 selectedAlumno.alumno.id,
                 notaNumerica,
+                selectedUnidad,
                 observaciones || undefined
             );
-            setSuccessMsg('Calificación guardada con éxito.');
+            setSuccessMsg(`Calificación de unidad ${selectedUnidad} guardada con éxito.`);
             closeModal();
             // Recargar alumnos
             await loadAlumnos(selectedMateriaId);
         } catch (e: any) {
-            setError('Error al guardar calificación: ' + (e.message || 'Desconocido'));
+            setError('Error al guardar calificación: ' + (e.response?.data?.message || e.message || 'Desconocido'));
         } finally {
             setSaving(false);
         }
@@ -314,8 +331,8 @@ const MaestroDashboard: React.FC = () => {
                                                 )}
                                             </div>
 
-                                            {/* Lista de Alumnos - Diseño Moderno */}
-                                            <div className="space-y-2">
+                                            {/* Lista de Alumnos - Diseño Moderno con Unidades */}
+                                            <div className="space-y-3">
                                                 {alumnos
                                                     .filter(item => {
                                                         if (!filtroAlumnoMaestro) return true;
@@ -324,44 +341,76 @@ const MaestroDashboard: React.FC = () => {
                                                             item.alumno.matricula.toLowerCase().includes(filtro) ||
                                                             item.alumno.grupo.toLowerCase().includes(filtro);
                                                     })
-                                                    .map((item) => (
-                                                        <div
-                                                            key={item.alumno.id}
-                                                            className="flex items-center justify-between p-4 border border-neutral-200 rounded-lg hover:border-neutral-300 hover:shadow-sm transition-all bg-white"
-                                                        >
-                                                            <div className="flex items-center gap-4 flex-1">
-                                                                <div className="w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                                                    <span className="text-neutral-700 font-bold text-sm">{item.alumno.nombre.charAt(0)}</span>
-                                                                </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <h4 className="text-sm font-semibold text-neutral-900 truncate">{item.alumno.nombre}</h4>
-                                                                    <div className="flex items-center gap-3 mt-1">
-                                                                        <span className="text-xs text-neutral-500">{item.alumno.matricula}</span>
-                                                                        <span className="text-xs text-neutral-400">•</span>
-                                                                        <span className="px-2 py-0.5 text-xs font-medium bg-neutral-100 text-neutral-700 rounded">{item.alumno.grupo}</span>
+                                                    .map((item) => {
+                                                        const unidadesCalificadas = item.calificaciones || [];
+                                                        const unidadesDisponibles = Array.from({ length: 5 }, (_, i) => i + 1);
+
+                                                        return (
+                                                            <div
+                                                                key={item.alumno.id}
+                                                                className="border border-neutral-200 rounded-lg hover:border-neutral-300 hover:shadow-sm transition-all bg-white overflow-hidden"
+                                                            >
+                                                                {/* Header del Alumno */}
+                                                                <div className="flex items-center justify-between p-4 bg-neutral-50 border-b border-neutral-200">
+                                                                    <div className="flex items-center gap-4 flex-1">
+                                                                        <div className="w-12 h-12 bg-neutral-200 rounded-full flex items-center justify-center flex-shrink-0">
+                                                                            <span className="text-neutral-800 font-bold text-sm">{item.alumno.nombre.charAt(0)}</span>
+                                                                        </div>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <h4 className="text-sm font-semibold text-neutral-900">{item.alumno.nombre}</h4>
+                                                                            <div className="flex items-center gap-3 mt-1">
+                                                                                <span className="text-xs text-neutral-500">{item.alumno.matricula}</span>
+                                                                                <span className="text-xs text-neutral-400">•</span>
+                                                                                <span className="px-2 py-0.5 text-xs font-medium bg-neutral-100 text-neutral-700 rounded">{item.alumno.grupo}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="ml-4 text-right">
+                                                                        <div className="text-xs text-neutral-500 mb-1">Promedio</div>
+                                                                        <div className={`text-lg font-bold ${item.promedio_materia >= 7 ? 'text-green-600' : item.promedio_materia >= 6 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                                                            {item.promedio_materia.toFixed(2)}
+                                                                        </div>
+                                                                        <div className="text-xs text-neutral-400 mt-1">{item.unidades_calificadas || 0}/5 unidades</div>
                                                                     </div>
                                                                 </div>
-                                                            </div>
-                                                            <div className="flex items-center gap-4 ml-4">
-                                                                {item.nota ? (
-                                                                    <div className={`px-3 py-1.5 rounded-lg text-sm font-bold ${parseFloat(item.nota.toString()) >= 7
-                                                                        ? 'bg-green-50 text-green-700'
-                                                                        : 'bg-red-50 text-red-700'
-                                                                        }`}>
-                                                                        {item.nota}
+
+                                                                {/* Unidades */}
+                                                                <div className="p-4">
+                                                                    <div className="grid grid-cols-5 gap-2 mb-3">
+                                                                        {unidadesDisponibles.map(unidad => {
+                                                                            const califUnidad = unidadesCalificadas.find(c => c.unidad === unidad);
+                                                                            const nota = califUnidad ? parseFloat(califUnidad.nota.toString()) : null;
+
+                                                                            return (
+                                                                                <button
+                                                                                    key={unidad}
+                                                                                    onClick={() => openModal(item, unidad)}
+                                                                                    className={`p-2 rounded-lg text-xs font-semibold transition-all ${nota !== null
+                                                                                        ? nota >= 7
+                                                                                            ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
+                                                                                            : nota >= 6
+                                                                                                ? 'bg-yellow-50 text-yellow-700 border border-yellow-200 hover:bg-yellow-100'
+                                                                                                : 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100'
+                                                                                        : 'bg-neutral-100 text-neutral-600 border border-neutral-200 hover:bg-neutral-200'
+                                                                                        }`}
+                                                                                    title={nota !== null ? `Unidad ${unidad}: ${nota}` : `Calificar Unidad ${unidad}`}
+                                                                                >
+                                                                                    <div className="font-bold">{unidad}</div>
+                                                                                    <div className="text-[10px]">{nota !== null ? nota.toFixed(1) : '-'}</div>
+                                                                                </button>
+                                                                            );
+                                                                        })}
                                                                     </div>
-                                                                ) : (
-                                                                    <span className="text-xs text-neutral-400 px-3 py-1.5">Sin calificar</span>
-                                                                )}
-                                                                <button
-                                                                    onClick={() => openModal(item)}
-                                                                    className="px-4 py-2 text-xs font-semibold bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg transition-colors"
-                                                                >
-                                                                    {item.nota ? 'Editar' : 'Calificar'}
-                                                                </button>
+                                                                    <button
+                                                                        onClick={() => openModal(item)}
+                                                                        className="w-full px-4 py-2 text-xs font-semibold bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg transition-colors"
+                                                                    >
+                                                                        Calificar Nueva Unidad
+                                                                    </button>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    ))}
+                                                        );
+                                                    })}
                                             </div>
                                         </>
                                     )}
@@ -383,6 +432,37 @@ const MaestroDashboard: React.FC = () => {
 
                             {/* Formulario */}
                             <div className="p-6 space-y-5">
+                                <div>
+                                    <label className="block text-sm font-semibold text-neutral-700 mb-2">Unidad</label>
+                                    <select
+                                        value={selectedUnidad}
+                                        onChange={(e) => {
+                                            const unidad = parseInt(e.target.value);
+                                            setSelectedUnidad(unidad);
+                                            // Si ya existe una calificación para esta unidad, cargar sus datos
+                                            const califUnidad = selectedAlumno?.calificaciones.find(c => c.unidad === unidad);
+                                            if (califUnidad) {
+                                                setNota(califUnidad.nota.toString());
+                                                setObservaciones(califUnidad.observaciones || '');
+                                            } else {
+                                                setNota('');
+                                                setObservaciones('');
+                                            }
+                                        }}
+                                        className="w-full px-4 py-3 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-neutral-500 focus:border-neutral-500 transition-all"
+                                    >
+                                        {Array.from({ length: 5 }, (_, i) => i + 1).map(u => (
+                                            <option key={u} value={u}>
+                                                Unidad {u}
+                                                {selectedAlumno?.calificaciones.find(c => c.unidad === u)
+                                                    ? ` (Ya calificada: ${selectedAlumno.calificaciones.find(c => c.unidad === u)?.nota})`
+                                                    : ''
+                                                }
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
                                 <div>
                                     <label className="block text-sm font-semibold text-neutral-700 mb-2">Nota (0 - 10)</label>
                                     <input

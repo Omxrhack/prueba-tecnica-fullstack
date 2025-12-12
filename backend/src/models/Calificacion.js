@@ -15,6 +15,16 @@ const Calificacion = sequelize.define('Calificacion', {
       max: 10
     }
   },
+  unidad: {
+    type: DataTypes.INTEGER,
+    allowNull: true, // Temporalmente nullable para permitir migración
+    validate: {
+      min: 1,
+      max: 5
+    },
+    defaultValue: 1,
+    comment: 'Número de unidad (1-5)'
+  },
   observaciones: {
     type: DataTypes.TEXT
   },

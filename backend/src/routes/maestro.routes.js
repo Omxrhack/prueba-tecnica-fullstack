@@ -72,6 +72,10 @@ const calificacionValidations = [
         .isFloat({ min: 0, max: 10 })
         .withMessage('La nota debe ser un número entre 0 y 10')
         .toFloat(),
+    body('unidad')
+        .isInt({ min: 1, max: 5 })
+        .withMessage('La unidad debe ser un número entre 1 y 5')
+        .toInt(),
     body('observaciones')
         .optional()
         .isString()

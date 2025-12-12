@@ -29,9 +29,14 @@ export interface AlumnoPorMateria {
         matricula: string;
         grupo: string;
     };
-    nota: number | string;
-    observaciones?: string;
-    fecha_registro: string;
+    calificaciones: {
+        unidad: number;
+        nota: number;
+        observaciones?: string;
+        fecha_registro: string;
+    }[];
+    promedio_materia: number;
+    unidades_calificadas: number;
 }
 
 export interface DetalleAlumno {
@@ -48,10 +53,14 @@ export interface DetalleAlumno {
         codigo: string;
         descripcion?: string;
     };
-    nota: number | string;
-    observaciones?: string;
-    fecha_registro: string;
-    fecha_actualizacion: string;
+    calificaciones: {
+        unidad: number;
+        nota: number;
+        observaciones?: string;
+        fecha_registro: string;
+        fecha_actualizacion: string;
+    }[];
+    promedio_materia: number;
 }
 
 /**
@@ -91,16 +100,17 @@ export const getDetalleAlumno = async (materiaID: number, alumnoID: number): Pro
 };
 
 /**
- * Registra o actualiza una calificación
+ * Registra o actualiza una calificación por unidad
  * POST /api/maestro/calificaciones/{materiaID}/{alumnoID}
  */
 export const registrarCalificacion = async (
     materiaID: number,
     alumnoID: number,
     nota: number,
+    unidad: number,
     observaciones?: string
 ): Promise<any> => {
-    const payload: { nota: number; observaciones?: string } = { nota };
+    const payload: { nota: number; unidad: number; observaciones?: string } = { nota, unidad };
     if (observaciones) {
         payload.observaciones = observaciones;
     }

@@ -114,27 +114,30 @@ const MaestroController = {
             });
 
             // Procesar los datos para agrupar las calificaciones por alumno
+            // Filtrar calificaciones con Alumno null (alumnos eliminados)
             const alumnosMap = {};
-            calificaciones.forEach(c => {
-                const alumnoId = c.Alumno.id;
-                
-                if (!alumnosMap[alumnoId]) {
-                    alumnosMap[alumnoId] = {
-                        id: alumnoId,
-                        nombre: c.Alumno.nombre,
-                        matricula: c.Alumno.matricula,
-                        grupo: c.Alumno.grupo,
-                        calificaciones: []
-                    };
-                }
+            calificaciones
+                .filter(c => c.Alumno && c.Alumno.id) // Filtrar calificaciones sin alumno válido
+                .forEach(c => {
+                    const alumnoId = c.Alumno.id;
+                    
+                    if (!alumnosMap[alumnoId]) {
+                        alumnosMap[alumnoId] = {
+                            id: alumnoId,
+                            nombre: c.Alumno.nombre,
+                            matricula: c.Alumno.matricula,
+                            grupo: c.Alumno.grupo,
+                            calificaciones: []
+                        };
+                    }
 
-                alumnosMap[alumnoId].calificaciones.push({
-                    calificacion_id: c.id,
-                    materia: c.Materia.nombre,
-                    nota: c.nota,
-                    fecha_registro: c.fecha_registro
+                    alumnosMap[alumnoId].calificaciones.push({
+                        calificacion_id: c.id,
+                        materia: c.Materia ? c.Materia.nombre : 'Materia desconocida',
+                        nota: c.nota,
+                        fecha_registro: c.fecha_registro
+                    });
                 });
-            });
 
             const alumnosList = Object.values(alumnosMap);
 
@@ -155,18 +158,22 @@ const MaestroController = {
         // IDs leídos de la URL (req.params)
         const alumno_id = req.params.alumnoID;
         const materia_id = req.params.materiaID;
-        // Nota y observaciones del Body (req.body)
-        const { nota, observaciones } = req.body;
+        // Nota, unidad y observaciones del Body (req.body)
+        const { nota, unidad, observaciones } = req.body;
         const maestro_id = req.user.id;
     
         // 1. Validación básica
-        if (!alumno_id || !materia_id || nota === undefined || isNaN(nota)) {
-            return res.status(400).json({ message: 'Alumno, Materia y Nota son obligatorios.' });
+        if (!alumno_id || !materia_id || nota === undefined || isNaN(nota) || !unidad || isNaN(unidad)) {
+            return res.status(400).json({ message: 'Alumno, Materia, Nota y Unidad son obligatorios.' });
         }
     
         const notaNumerica = parseFloat(nota);
+        const unidadNum = parseInt(unidad);
         if (notaNumerica < 0 || notaNumerica > 10) {
             return res.status(400).json({ message: 'La nota debe estar entre 0 y 10.' });
+        }
+        if (unidadNum < 1 || unidadNum > 5) {
+            return res.status(400).json({ message: 'La unidad debe estar entre 1 y 5.' });
         }
     
         // 2. Determinar maestro_id final con política explícita:
@@ -193,33 +200,37 @@ const MaestroController = {
         }
     
         try {
-            // 3. findOrCreate / update
+            // 3. findOrCreate / update - Ahora incluyendo unidad (puede haber múltiples calificaciones por alumno-materia, una por unidad)
             const [calificacion, created] = await Calificacion.findOrCreate({
                 where: {
                     alumno_id: Number(alumno_id),
                     materia_id: Number(materia_id),
-                    maestro_id: maestroId
+                    maestro_id: maestroId,
+                    unidad: unidadNum
                 },
                 defaults: {
                     nota: notaNumerica,
-                    observaciones: observaciones
+                    observaciones: observaciones || null
                 }
             });
     
             let mensaje = '';
             if (created) {
-                mensaje = 'Calificación registrada con éxito.';
+                mensaje = `Calificación de unidad ${unidadNum} registrada con éxito.`;
             } else {
                 await calificacion.update({
                     nota: notaNumerica,
-                    observaciones: observaciones
+                    observaciones: observaciones || null
                 });
-                mensaje = 'Calificación actualizada con éxito.';
+                mensaje = `Calificación de unidad ${unidadNum} actualizada con éxito.`;
             }
     
             return res.status(created ? 201 : 200).json({
                 message: mensaje,
-                data: calificacion
+                data: {
+                    ...calificacion.toJSON(),
+                    unidad: calificacion.unidad || unidadNum
+                }
             });
     
         } catch (error) {
@@ -268,15 +279,47 @@ const MaestroController = {
                         attributes: ['id', 'nombre', 'codigo']
                     }
                 ],
-                order: [[Alumno, 'nombre', 'ASC']]
+                order: [[Alumno, 'nombre', 'ASC'], ['unidad', 'ASC']]
             });
 
-            const alumnos = calificaciones.map(c => ({
-                alumno: c.Alumno,
-                nota: c.nota,
-                observaciones: c.observaciones,
-                fecha_registro: c.created_at
-            }));
+            // Agrupar calificaciones por alumno y calcular promedios
+            // Filtrar calificaciones con Alumno null (alumnos eliminados)
+            const alumnosMap = {};
+            calificaciones
+                .filter(c => c.Alumno && c.Alumno.id) // Filtrar calificaciones sin alumno válido
+                .forEach(c => {
+                    const alumnoId = c.Alumno.id;
+                    
+                    if (!alumnosMap[alumnoId]) {
+                        alumnosMap[alumnoId] = {
+                            alumno: c.Alumno,
+                            calificaciones: [],
+                            promedio_materia: 0
+                        };
+                    }
+
+                    alumnosMap[alumnoId].calificaciones.push({
+                        unidad: c.unidad,
+                        nota: parseFloat(c.nota),
+                        observaciones: c.observaciones,
+                        fecha_registro: c.created_at
+                    });
+                });
+
+            // Calcular promedios por materia para cada alumno
+            const alumnos = Object.values(alumnosMap).map(alumnoData => {
+                const notas = alumnoData.calificaciones.map(cal => cal.nota);
+                const promedio = notas.length > 0 
+                    ? notas.reduce((sum, nota) => sum + nota, 0) / notas.length 
+                    : 0;
+
+                return {
+                    alumno: alumnoData.alumno,
+                    calificaciones: alumnoData.calificaciones,
+                    promedio_materia: parseFloat(promedio.toFixed(2)),
+                    unidades_calificadas: notas.length
+                };
+            });
 
             res.json({
                 message: `Alumnos de la materia ${materiaId} asignados al maestro ID ${maestroId}`,
@@ -309,7 +352,8 @@ const MaestroController = {
                 });
             }
 
-            const calificacion = await Calificacion.findOne({
+            // Obtener todas las calificaciones del alumno en esta materia (puede haber múltiples por unidad)
+            const calificaciones = await Calificacion.findAll({
                 where: { 
                     maestro_id: maestroId,
                     materia_id: materiaId,
@@ -325,14 +369,62 @@ const MaestroController = {
                         model: Materia,
                         attributes: ['id', 'nombre', 'codigo', 'descripcion']
                     }
-                ]
+                ],
+                order: [['unidad', 'ASC']]
             });
 
-            if (!calificacion) {
-                return res.status(404).json({ 
-                    message: 'Calificación no encontrada o no tienes acceso a este registro.' 
+            if (calificaciones.length === 0) {
+                // Si no hay calificaciones, devolver info del alumno y materia pero sin calificaciones
+                const alumno = await Alumno.findByPk(alumnoId);
+                const materia = await Materia.findByPk(materiaId);
+                
+                if (!alumno || !materia) {
+                    return res.status(404).json({ 
+                        message: 'Alumno o materia no encontrados.' 
+                    });
+                }
+
+                return res.json({
+                    message: 'Detalle del alumno',
+                    data: {
+                        alumno: {
+                            id: alumno.id,
+                            nombre: alumno.nombre,
+                            matricula: alumno.matricula,
+                            grupo: alumno.grupo,
+                            fecha_nacimiento: alumno.fecha_nacimiento
+                        },
+                        materia: {
+                            id: materia.id,
+                            nombre: materia.nombre,
+                            codigo: materia.codigo,
+                            descripcion: materia.descripcion
+                        },
+                        calificaciones: [],
+                        promedio_materia: 0
+                    }
                 });
             }
+
+            // Calcular promedio
+            const notas = calificaciones.map(c => parseFloat(c.nota));
+            const promedio = notas.reduce((sum, nota) => sum + nota, 0) / notas.length;
+
+            res.json({
+                message: 'Detalle del alumno',
+                data: {
+                    alumno: calificaciones[0].Alumno,
+                    materia: calificaciones[0].Materia,
+                    calificaciones: calificaciones.map(c => ({
+                        unidad: c.unidad,
+                        nota: parseFloat(c.nota),
+                        observaciones: c.observaciones,
+                        fecha_registro: c.created_at,
+                        fecha_actualizacion: c.updated_at
+                    })),
+                    promedio_materia: parseFloat(promedio.toFixed(2))
+                }
+            });
 
             res.json({
                 message: 'Detalle de alumno obtenido con éxito.',

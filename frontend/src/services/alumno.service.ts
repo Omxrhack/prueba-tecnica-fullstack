@@ -1,21 +1,44 @@
 // frontend/src/services/alumno.service.ts
 import api from './api';
 
+export interface CalificacionUnidad {
+    unidad: number;
+    nota: number;
+    observaciones?: string;
+    fecha_registro: string;
+}
+
 export interface CalificacionAlumno {
-    id: number;
     materia: {
         id: number;
         nombre: string;
         codigo: string;
         descripcion?: string;
+        semestre: number;
     };
     maestro: {
         id: number;
         nombre: string;
     } | null;
-    nota: number;
-    observaciones: string;
-    fecha_registro: string;
+    unidades: CalificacionUnidad[];
+    promedio_materia: number;
+    activa?: number; // 1 = cursando, 0 = no cursando
+    cursando?: boolean; // boolean para compatibilidad
+}
+
+export interface MateriaPorSemestre {
+    cursadas: CalificacionAlumno[];
+    cursando: CalificacionAlumno[]; // Nuevo: materias activas (cursando)
+    faltantes: {
+        materia: {
+            id: number;
+            nombre: string;
+            codigo: string;
+            descripcion?: string;
+            semestre: number;
+        };
+    }[];
+    promedio_semestre: number;
 }
 
 export interface MisCalificacionesResponse {
@@ -26,10 +49,16 @@ export interface MisCalificacionesResponse {
             nombre: string;
             matricula: string;
             grupo: string;
+            semestre_actual: number;
         };
         calificaciones: CalificacionAlumno[];
+        materias_cursando: CalificacionAlumno[]; // Nuevo: todas las materias activas
+        materias_por_semestre: { [key: number]: MateriaPorSemestre };
         promedio_general: number;
+        promedio_general_semestres: number;
         total_materias: number;
+        total_materias_cursando: number; // Nuevo: total de materias activas
+        total_semestres: number;
     };
 }
 
@@ -46,9 +75,8 @@ export interface CalificacionPorMateriaResponse {
             id: number;
             nombre: string;
         } | null;
-        nota: number;
-        observaciones: string;
-        fecha_registro: string;
+        unidades: CalificacionUnidad[];
+        promedio_materia: number;
     };
 }
 
