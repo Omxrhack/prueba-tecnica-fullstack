@@ -27,9 +27,9 @@ Sistema completo de gestión escolar que permite a diferentes roles (Administrad
 
 ---
 
-## ✨ Características Principales
+##  Características Principales
 
-### 👨‍💼 Panel de Administrador (Control Escolar)
+### Panel de Administrador (Control Escolar)
 -  Gestión completa de materias, maestros y alumnos
 -  Creación y edición de materias con asignación de semestre (1-8)
 -  Asignación de maestros a materias
