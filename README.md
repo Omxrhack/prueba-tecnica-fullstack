@@ -341,7 +341,7 @@ prueba-tecnica-fullstack/
 
 | Método | Endpoint | Descripción | Autenticación |
 |--------|----------|-------------|---------------|
-| `POST` | `/api/auth/login` | Iniciar sesión | ❌ Público |
+| `POST` | `/api/auth/login` | Iniciar sesión |  Público |
 
 **Request Body:**
 ```json
@@ -416,7 +416,7 @@ Authorization: Bearer <token>
 
 ---
 
-## 🗄️ Modelo de Datos
+## Modelo de Datos
 
 ### Entidades Principales
 
